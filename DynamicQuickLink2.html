@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Personnal Quick Links – Dynamic</title>
+<style>
+  :root{
+    --bg:#f5f5f5;
+    --card:#fff;
+    --muted:#666;
+    --accent:#111;
+    --shadow:0 2px 5px rgba(0,0,0,0.12);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    background:var(--bg);
+    color:#222;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+  }
+  header{
+    background:var(--accent);
+    color:#fff;
+    padding:16px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  header h1{
+    margin:0;
+    font-size:18px;
+    font-weight:600;
+    cursor:pointer;
+  }
+.container{
+  /* CHANGED: Increased max-width from 1100px to 1400px */
+  max-width:1400px;
+  margin:20px auto;
+  padding:0 16px 60px;
+}
+  .section-title{
+    font-size:13px;
+    font-weight:600;
+    margin:6px 0 14px;
+    color:var(--muted);
+  }
+  .shortcut-grid{
+    display:grid;
+    /* ADJUSTED: Decreased minmax to 100px to fit more columns */
+    grid-template-columns:repeat(auto-fill, minmax(100px,1fr));
+    gap:16px;
+  }
+  .shortcut{
+    background:var(--card);
+    border-radius:12px;
+    box-shadow:var(--shadow);
+    text-align:center;
+    /* ADJUSTED: Reduced padding */
+    padding:8px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    /* Reduced gap slightly */
+    gap:6px;
+    text-decoration:none;
+    color:inherit;
+    position:relative;
+    overflow:visible;
+    transition:transform .14s ease, box-shadow .14s ease;
+    /* ADJUSTED: Reduced minimum height */
+    min-height:70px;
+  }
+  .shortcut:hover{ transform:translateY(-6px); box-shadow:0 8px 22px rgba(0,0,0,0.16); }
+  .icon{
+    /* ADJUSTED: Reduced icon size */
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    background:#e9e9e9; /* Default color */
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    /* INCREASED: Icon font size for better visibility */
+    font-size:18px; 
+    margin:0 auto;
+    color: #111; /* Default text color */
+    /* **MODIFIED:** Make the text heavier */
+    font-weight: **900**; 
+  }
+  .shortcut .title{
+    /* ADJUSTED: Reduced title font size */
+    font-size:12px;
+    font-weight:500;
+    color:#111;
+    word-break:break-word;
+  }
+  .shortcut .url{
+    /* ADJUSTED: Reduced URL font size */
+    font-size:10px;
+    color:var(--muted);
+    word-break:break-all;
+  }
+  .menu-btn{
+    position:absolute;
+    top:8px;
+    right:8px;
+    width:30px;
+    height:30px;
+    border-radius:6px;
+    background:transparent;
+    border:0;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:.9;
+    z-index:10;
+  }
+  .menu-btn:hover{ background:rgba(0,0,0,0.04); }
+  .menu{
+    position:absolute;
+    top:36px;
+    right:8px;
+    background:#fff;
+    border-radius:8px;
+    box-shadow:0 8px 20px rgba(0,0,0,0.14);
+    min-width:120px;
+    z-index:30;
+    overflow:hidden;
+    display:none;
+    flex-direction:column;
+  }
+  .menu.visible{ display:flex; }
+  .menu button{
+    border:0;
+    background:transparent;
+    padding:8px 12px;
+    text-align:left;
+    cursor:pointer;
+    width:100%;
+    font-size:13px;
+  }
+  .menu button:hover{ background:rgba(0,0,0,0.04); }
+  .modal-backdrop{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+  }
+  .modal-backdrop.show{ display:flex; }
+  .modal{
+    width:min(520px, calc(100% - 32px));
+    background:#fff;
+    border-radius:12px;
+    padding:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.2);
+  }
+  .modal h2{ margin:0 0 10px; font-size:17px; }
+  .form-row{ display:flex; gap:10px; margin-bottom:10px; }
+  .form-row .col{ flex:1; display:flex; flex-direction:column; gap:6px; }
+  label{ font-size:12px; color:var(--muted); }
+  /* START: MODIFIED/ADDED STYLES FOR COLOR INPUT */
+  input[type="text"], select, input[type="color"]{
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid #e2e2e2;
+    font-size:14px;
+    outline:none;
+    /* Ensure no ugly system focus */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  input[type="color"]{
+    height: 38px; /* Match the height of the text inputs */
+    padding: 0 4px; /* Minimal padding for the color swatch */
+  }
+  /* END: MODIFIED/ADDED STYLES FOR COLOR INPUT */
+  .modal-footer{ display:flex; justify-content:flex-end; gap:8px; margin-top:10px; }
+  .btn{
+    padding:8px 12px;
+    border-radius:8px;
+    border:0;
+    cursor:pointer;
+    font-weight:600;
+    font-size:13px;
+  }
+  .btn.secondary{ background:#f0f0f0; color:#111; }
+  .btn.primary{ background:var(--accent); color:#fff; }
+  .header-icon-btn{
+    background:rgba(255,255,255,0.1);
+    border:0;
+    border-radius:6px;
+    width:36px;
+    height:36px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    color:#fff;
+    transition:background .2s ease;
+  }
+  .header-icon-btn:hover{
+    background:rgba(255,255,255,0.2);
+  }
+  .empty{
+    padding:26px;
+    border-radius:12px;
+    background:linear-gradient(180deg,#fff,#fbfbfb);
+    text-align:center;
+    color:var(--muted);
+    box-shadow:var(--shadow);
+  }
+</style>
+</head>
+<body>
+<header>
+  <div style="width:100%;max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 16px;">
+    <h1 id="addHeaderBtn">+ My Personnal Quick Links</h1>
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div style="display:flex;gap:8px;">
+        <button id="exportBtn" class="header-icon-btn" title="Export links as JSON">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+        </button>
+        <button id="importBtn" class="header-icon-btn" title="Import links from JSON">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+        </button>
+      </div>
+      <div style="color:#ddd;font-size:13px;">Idea by | Arvin Acosta</div>
+    </div>
+  </div>
+  <input type="file" id="importFileInput" accept=".json" style="display:none;" />
+</header>
+
+<main class="container" role="main">
+  <div id="linksContainer">
+    </div>
+  <div style="height:18px"></div>
+  <div style="color:var(--muted);font-size:13px;">Tip: Click a tile to open. Use ⋮ to edit or delete. Changes are saved in IndexedDB.</div>
+</main>
+
+<div id="modalBackdrop" class="modal-backdrop" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h2 id="modalTitle">Add Link</h2>
+    <div style="margin-top:8px;">
+      <div class="form-row">
+        <div class="col">
+          <label for="inputName">Display name</label>
+          <input id="inputName" type="text" placeholder="e.g. D1 Registration Form" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="col">
+          <label for="inputUrl">URL or File Path</label>
+          <input id="inputUrl" type="text" placeholder="https://example.com or file:///C:/path/to/file.pdf" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="col">
+          <label for="inputCategory">Category</label>
+          <select id="inputCategory">
+            <option value="Basic">Basic</option>
+            <option value="Registration">I. Registration</option>
+            <option value="Assessments">II. Assessments</option>
+            <option value="System Access">III. System Access</option>
+            <option value="TMSurveys">IV. TM Surveys</option>
+            <option value="Government">V. Government</option>
+            <option value="ClientWebsites">VI. Client Websites</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="col">
+          <label for="inputColor">Icon Background Color (Optional)</label>
+          <input id="inputColor" type="color" value="#e9e9e9" />
+        </div>
+      </div>
+      </div>
+    <div class="modal-footer">
+      <button id="cancelBtn" class="btn secondary">Cancel</button>
+      <button id="saveBtn" class="btn primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const DB_NAME='myQLinksDB';
+  const STORE_NAME='quicklinks';
+  const DB_VERSION=1;
+  
+  // NEW CONSTANT FOR LOCALSTORAGE
+  const LS_COLOR_KEY = 'QLinkLastColor';
+</script>
+
+<script>
+  let db=null;
+  let usingIndexedDB=true;
+  
+  // VARIABLE TO HOLD THE DEFAULT COLOR
+  let lastSelectedColor = '#e9e9e9';
+
+  async function openDB(){
+    if(!('indexedDB' in window)){ usingIndexedDB=false; return; }
+    return new Promise((resolve,reject)=>{
+      const req=indexedDB.open(DB_NAME,DB_VERSION);
+      req.onupgradeneeded=ev=>{
+        const idb=ev.target.result;
+        if(!idb.objectStoreNames.contains(STORE_NAME)){
+          const store=idb.createObjectStore(STORE_NAME,{keyPath:'id',autoIncrement:true});
+          store.createIndex('name','name',{unique:false});
+          store.createIndex('link','link',{unique:false});
+          store.createIndex('category','category',{unique:false});
+          // Note: Indexing for 'color' is not strictly necessary for this app's current query patterns, but could be added:
+          // store.createIndex('color','color',{unique:false});
+        }
+      };
+      req.onsuccess=ev=>{ db=ev.target.result; resolve(db); };
+      req.onerror=ev=>{ console.error('IndexedDB open error',ev); usingIndexedDB=false; resolve(null); };
+    });
+  }
+
+  function idbAdd(item){ return new Promise((resolve,reject)=>{ const tx=db.transaction(STORE_NAME,'readwrite'); const store=tx.objectStore(STORE_NAME); const req=store.add(item); req.onsuccess=()=>resolve(req.result); req.onerror=e=>reject(e); }); }
+  function idbGetAll(){ return new Promise((resolve,reject)=>{ const tx=db.transaction(STORE_NAME,'readonly'); const store=tx.objectStore(STORE_NAME); const req=store.getAll(); req.onsuccess=()=>resolve(req.result||[]); req.onerror=e=>reject(e); }); }
+  function idbPut(item){ return new Promise((resolve,reject)=>{ const tx=db.transaction(STORE_NAME,'readwrite'); const store=tx.objectStore(STORE_NAME); const req=store.put(item); req.onsuccess=()=>resolve(true); req.onerror=e=>reject(e); }); }
+  function idbDelete(id){ return new Promise((resolve,reject)=>{ const tx=db.transaction(STORE_NAME,'readwrite'); const store=tx.objectStore(STORE_NAME); const req=store.delete(id); req.onsuccess=()=>resolve(true); req.onerror=e=>reject(e); }); }
+
+  const LS_KEY='quicklinks_fallback_v1';
+  async function lsGetAll(){ const raw=localStorage.getItem(LS_KEY); if(!raw)return[]; try{return JSON.parse(raw);}catch(e){return[];} }
+  async function lsSaveAll(arr){ localStorage.setItem(LS_KEY,JSON.stringify(arr)); }
+
+  const linksContainer=document.getElementById('linksContainer');
+  const modalBackdrop=document.getElementById('modalBackdrop');
+  const inputName=document.getElementById('inputName');
+  const inputUrl=document.getElementById('inputUrl');
+  const inputCategory=document.getElementById('inputCategory');
+  const inputColor=document.getElementById('inputColor');
+  const saveBtn=document.getElementById('saveBtn');
+  const cancelBtn=document.getElementById('cancelBtn');
+  const modalTitle=document.getElementById('modalTitle');
+  let editingId=null;
+
+  const categories=[
+    {key:'Basic',title:'Basic'}, // NEW CATEGORY OBJECT ADDED HERE
+    {key:'Registration',title:'I. Registration'},
+    {key:'Assessments',title:'II. Assessments'},
+    {key:'System Access',title:'III. System Access'},
+    {key:'TMSurveys',title:'IV. TM Surveys'},
+    {key:'Government',title:'V. Government'},
+    {key:'ClientWebsites',title:'VI. Client Websites'}
+  ];
+  
+  // NEW FUNCTION TO READ LAST COLOR FROM LOCALSTORAGE
+  function getInitialColor() {
+    const savedColor = localStorage.getItem(LS_COLOR_KEY);
+    if (savedColor) {
+      lastSelectedColor = savedColor;
+    }
+  }
+
+  (async function init(){ 
+    getInitialColor(); // Read the last selected color on initialization
+    await openDB(); 
+    await renderAll(); 
+  })();
+
+  async function renderAll(){
+    let items=usingIndexedDB?await idbGetAll():await lsGetAll();
+    linksContainer.innerHTML='';
+    for(const cat of categories){
+      const catItems=items.filter(x=>x.category===cat.key);
+      if(!catItems.length) continue;
+      const titleEl=document.createElement('div');
+      titleEl.className='section-title';
+      titleEl.textContent=cat.title;
+      const grid=document.createElement('div');
+      grid.className='shortcut-grid';
+      catItems.forEach(item=>{
+        const a=document.createElement('a');
+        a.className='shortcut';
+        a.href=item.link;
+        a.target='_blank';
+        a.rel='noopener noreferrer';
+        a.dataset.id=item.id;
+
+        const iconDiv=document.createElement('div');
+        iconDiv.className='icon';
+        iconDiv.textContent=(item.name||'').charAt(0).toUpperCase();
+
+        // START: Apply custom color and contrast check
+        if(item.color){
+          iconDiv.style.backgroundColor=item.color;
+          // Basic heuristic to change text color for better contrast on dark backgrounds
+          const isDark = (r, g, b) => (r * 0.299 + g * 0.587 + b * 0.114) / 255 < 0.5;
+          const hex = item.color.substring(1);
+          const r = parseInt(hex.substring(0, 2), 16);
+          const g = parseInt(hex.substring(2, 4), 16);
+          const b = parseInt(hex.substring(4, 6), 16);
+          if (isDark(r, g, b)) {
+            iconDiv.style.color = '#fff';
+          } else {
+            iconDiv.style.color = '#111';
+          }
+        }
+        // END: Apply custom color and contrast check
+
+        const title=document.createElement('div');
+        title.className='title';
+        title.textContent=item.name||item.link;
+
+        const urlDiv=document.createElement('div');
+        urlDiv.className='url';
+        urlDiv.textContent=item.link;
+
+        const menuBtn=document.createElement('button');
+        menuBtn.className='menu-btn';
+        menuBtn.setAttribute('aria-label','Open menu');
+        menuBtn.innerHTML='⋮';
+
+        const menu=document.createElement('div');
+        menu.className='menu';
+        menu.innerHTML=`<button data-action="edit">Edit</button><button data-action="delete">Delete</button>`;
+
+        // Fixed: Prevent link opening when clicking menu button
+        menuBtn.addEventListener('click',ev=>{
+          ev.stopPropagation();
+          ev.preventDefault();
+          closeAllMenus();
+          menu.classList.toggle('visible');
+        });
+
+        // Fixed: Prevent link opening when clicking menu items
+        menu.addEventListener('click',ev=>{
+          ev.stopPropagation();
+          ev.preventDefault();
+          const action=ev.target.getAttribute('data-action');
+          if(!action) return;
+          if(action==='edit'){
+            openModalForEdit(item.id);
+          } else if(action==='delete'){
+            if(confirm('Delete this shortcut?')){
+              removeItem(item.id);
+            }
+          }
+          menu.classList.remove('visible');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click',ev=>{
+          if(!menu.contains(ev.target)&&ev.target!==menuBtn){
+            menu.classList.remove('visible');
+          }
+        });
+
+        a.appendChild(menuBtn);
+        a.appendChild(menu);
+        a.appendChild(iconDiv);
+        a.appendChild(title);
+        a.appendChild(urlDiv);
+        grid.appendChild(a);
+      });
+      linksContainer.appendChild(titleEl);
+      linksContainer.appendChild(grid);
+    }
+
+    if(!items.length){
+      const empty=document.createElement('div');
+      empty.className='empty';
+      empty.textContent='No shortcuts yet. Use + Quick Links to add one.';
+      linksContainer.appendChild(empty);
+    }
+  }
+
+  function closeAllMenus(){ document.querySelectorAll('.menu.visible').forEach(m=>m.classList.remove('visible')); }
+
+  function openModalForAdd(){
+    editingId=null;
+    modalTitle.textContent='Add Link';
+    inputName.value='';
+    inputUrl.value='';
+    inputCategory.value='Basic';
+    
+    // UPDATED: Use the last selected color as the default
+    inputColor.value=lastSelectedColor; 
+    
+    showModal();
+  }
+
+  async function openModalForEdit(id){
+    let item=null;
+    if(usingIndexedDB){ const all=await idbGetAll(); item=all.find(x=>x.id==id); }else{ const all=await lsGetAll(); item=all.find(x=>x.id==id); }
+    if(!item){ alert('Item not found'); return; }
+    editingId=item.id;
+    modalTitle.textContent='Edit Link';
+    inputName.value=item.name||'';
+    inputUrl.value=item.link||'';
+    inputCategory.value=item.category||'Registration';
+    inputColor.value=item.color||'#e9e9e9'; // Set saved icon color or default
+    showModal();
+  }
+  function showModal(){ modalBackdrop.classList.add('show'); modalBackdrop.setAttribute('aria-hidden','false'); inputName.focus(); }
+  function hideModal(){ modalBackdrop.classList.remove('show'); modalBackdrop.setAttribute('aria-hidden','true'); editingId=null; }
+
+  cancelBtn.addEventListener('click',e=>{ e.preventDefault(); hideModal(); });
+
+  saveBtn.addEventListener('click',async e=>{
+    e.preventDefault();
+    const name=inputName.value.trim();
+    let link=inputUrl.value.trim();
+    const category=inputCategory.value;
+    const color=inputColor.value.trim(); // Get color value
+    if(!name||!link){ alert('Please provide both name and URL/Path.'); return; }
+    // Accept link as-is without auto-adding https://
+
+    // NEW: Save the selected color to localStorage
+    localStorage.setItem(LS_COLOR_KEY, color);
+    lastSelectedColor = color; // Update the local variable for subsequent modal openings
+
+    if(editingId){
+      // Include color in the item object for saving/updating
+      const item={id:editingId,name,link,category,color};
+      if(usingIndexedDB) await idbPut(item);
+      else{
+        const arr=await lsGetAll();
+        const i=arr.findIndex(x=>x.id==editingId);
+        if(i>-1){
+          arr[i]={...arr[i],...item}; // Use spread to merge, preserving other potential properties
+          await lsSaveAll(arr);
+        }
+      }
+    }else{
+      // Include color in the new item object
+      if(usingIndexedDB) await idbAdd({name,link,category,color});
+      else{
+        const arr=await lsGetAll();
+        const lastId=arr.length?Math.max(...arr.map(x=>x.id||0)):0;
+        arr.push({id:lastId+1,name,link,category,color});
+        await lsSaveAll(arr);
+      }
+    }
+    hideModal();
+    await renderAll();
+  });
+
+  async function removeItem(id){
+    if(usingIndexedDB) await idbDelete(id);
+    else{ const arr=await lsGetAll(); const filtered=arr.filter(x=>x.id!=id); await lsSaveAll(filtered); }
+    await renderAll();
+  }
+
+  //modalBackdrop.addEventListener('click',ev=>{ if(ev.target===modalBackdrop) hideModal(); });
+  document.addEventListener('keydown',ev=>{ if(ev.key==='Escape') hideModal(); if((ev.ctrlKey||ev.metaKey)&&ev.key.toLowerCase()==='k'){ ev.preventDefault(); openModalForAdd(); } });
+  document.getElementById('addHeaderBtn').addEventListener('click',e=>{ e.preventDefault(); openModalForAdd(); });
+
+  // Export functionality
+  document.getElementById('exportBtn').addEventListener('click',async ()=>{
+    try{
+      const items=usingIndexedDB?await idbGetAll():await lsGetAll();
+      if(!items.length){
+        alert('No links to export.');
+        return;
+      }
+      const json=JSON.stringify(items,null,2);
+      const blob=new Blob([json],{type:'application/json'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;
+      a.download=`quicklinks-backup-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }catch(err){
+      console.error('Export error:',err);
+      alert('Failed to export links.');
+    }
+  });
+
+  // Import functionality
+  const importFileInput=document.getElementById('importFileInput');
+  document.getElementById('importBtn').addEventListener('click',()=>{
+    importFileInput.click();
+  });
+
+  importFileInput.addEventListener('change',async ev=>{
+    const file=ev.target.files[0];
+    if(!file) return;
+    try{
+      const text=await file.text();
+      const importedItems=JSON.parse(text);
+      if(!Array.isArray(importedItems)){
+        alert('Invalid JSON format. Expected an array of links.');
+        return;
+      }
+      const confirmed=confirm(`Import ${importedItems.length} link(s)? This will add to your existing links.`);
+      if(!confirmed) return;
+
+      for(const item of importedItems){
+        // Ensure all core properties, including color, are handled (though color is optional for old imports)
+        const newItem = {
+          name: item.name || '',
+          link: item.link || '',
+          category: item.category || 'Basic',
+          color: item.color || '#e9e9e9' // Default color if not in imported data
+        };
+
+        if(!newItem.name||!newItem.link) continue; // Skip malformed entries
+
+        if(usingIndexedDB){
+          await idbAdd(newItem);
+        }else{
+          const arr=await lsGetAll();
+          const lastId=arr.length?Math.max(...arr.map(x=>x.id||0)):0;
+          arr.push({id:lastId+1,...newItem});
+          await lsSaveAll(arr);
+        }
+      }
+      await renderAll();
+      alert(`Successfully imported ${importedItems.length} link(s)!`);
+    }catch(err){
+      console.error('Import error:',err);
+      alert('Failed to import links. Please check the JSON file format.');
+    }finally{
+      importFileInput.value='';
+    }
+  });
+</script>
+
+
+</body>
+</html>
