@@ -1,6 +1,5 @@
-# js_minifier_gui.py
-# FIXED VERSION - Works 100% on Windows, Python 3.12
-# Developed by Arvin Acosta , Noc 11, 2025
+# jsMinifier.py
+# Idea | Developed by Arvin Acosta , Noc 11, 2025
 
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
