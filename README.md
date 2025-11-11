@@ -13,7 +13,7 @@
 ------------------------------------
 
 
-# [ JavaScriptMinify ]
+# [ JavaScriptMinify ](https://github.com/ArvinAcostaGit2/NOC_Tools/tree/main/JavaScriptMinify)
 # JS Minifier GUI – 2025 Edition
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
@@ -27,7 +27,7 @@
 ------------------------------------
 
 
-# [ GetPCInfo ]
+# [ GetPCInfo ](https://github.com/ArvinAcostaGit2/NOC_Tools/tree/main/GetPCInfo)
 # GetPCInfo GUI - PC Inventory Collector 
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
