@@ -10,9 +10,6 @@ A **single-page**, **fully client-side** HTML dashboard that replaces your brows
 
 All data is stored **locally in your browser** — no server, no database, no tracking.
 
-![Preview](https://via.placeholder.com/1200x600/4a00e0/ffffff?text=Dynamic+Quick+Links+Dashboard+Preview)  
-*(Replace the link above with your own screenshot)*
-
 ## 🎯 What is this?
 
 A personalized, organized **quick links manager** that runs entirely in your browser.
