@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSV to IndexedDB Storage (Enhanced)</title>
+<style>
+  /* === General & Mobile Styles === */
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    text-align: center;
+    padding: 16px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    margin: 0;
+  }
+  .container {
+    max-width: 100%;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  }
+  h2 {
+    color: #333;
+    margin-bottom: 24px;
+    font-size: 24px;
+    font-weight: 700;
+  }
+  #dropZone {
+    border: 3px dashed #888;
+    border-radius: 16px;
+    padding: 40px 20px;
+    color: #555;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: #f8f9ff;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  #dropZone.dragover,
+  #dropZone:active {
+    background: #e0f7fa;
+    border-color: #00acc1;
+    color: #007c91;
+    transform: scale(0.98);
+  }
+  #fileInput {
+    display: none;
+  }
+  #status {
+    margin-top: 16px;
+    font-weight: 600;
+    font-size: 15px;
+    padding: 14px;
+    border-radius: 12px;
+    display: none;
+    line-height: 1.5;
+  }
+  #status.success {
+    background: #d4edda;
+    color: #155724;
+    display: block;
+  }
+  #status.error {
+    background: #f8d7da;
+    color: #721c24;
+    display: block;
+  }
+  #status.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    display: block;
+  }
+  .actions {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  button {
+    background: #667eea;
+    color: white;
+    padding: 16px 24px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.2s;
+    width: 100%;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  button:active {
+    transform: scale(0.96);
+    background: #5568d3;
+  }
+  button.danger {
+    background: #dc3545;
+  }
+  button.danger:active {
+    background: #c82333;
+  }
+  #recordsList {
+    margin-top: 24px;
+    text-align: left;
+    overflow-x: auto; /* For mobile table compatibility */
+  }
+  #recordsList h3 {
+    color: #333;
+    margin-bottom: 12px;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .record-info {
+    font-size: 15px;
+    padding: 10px;
+    background: #f1f1f1;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+  .record-info strong {
+    color: #667eea;
+  }
+  
+  /* === Table Styles === */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+  .data-table th, .data-table td {
+    border: 1px solid #ddd;
+    padding: 10px 8px;
+    text-align: left;
+    white-space: nowrap; /* Prevent wrapping in cells */
+  }
+  .data-table th {
+    background-color: #f2f2f2;
+    font-weight: 600;
+    color: #333;
+    position: sticky;
+    top: 0;
+  }
+  .data-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+
+  /* === Modal Styles === */
+  .modal {
+    display: none; 
+    position: fixed; 
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.6); 
+    padding-top: 50px;
+  }
+  .modal-content {
+    background-color: #fefefe;
+    margin: 5% auto; 
+    padding: 20px;
+    border-radius: 15px;
+    width: 90%; 
+    max-width: 600px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  }
+  .modal-content h3 {
+    margin-top: 0;
+    color: #667eea;
+  }
+  .modal-input-group {
+    margin-bottom: 15px;
+    text-align: left;
+  }
+  .modal-input-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #555;
+  }
+  .modal-input-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  .modal-actions button {
+    flex: 1;
+    padding: 12px;
+  }
+  .modal-preview-table-container {
+      max-height: 200px; /* Limit height for modal preview */
+      overflow: auto;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      margin-top: 10px;
+  }
+  .modal-preview-table-container table {
+      width: 100%;
+      border-collapse: collapse;
+  }
+  .modal-preview-table-container th {
+      background-color: #e0e0ff !important;
+  }
+  
+  /* === Desktop Styles === */
+  @media (min-width: 600px) {
+    body {
+      padding: 32px;
+    }
+    .container {
+      max-width: 700px;
+      padding: 32px;
+    }
+    h2 {
+      font-size: 28px;
+    }
+    #dropZone {
+      padding: 50px 30px;
+      font-size: 18px;
+    }
+    .actions {
+      flex-direction: row;
+    }
+    button {
+      width: auto;
+      flex: 1;
+    }
+    .modal-content {
+        margin: 10% auto;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>📥 CSV to IndexedDB Storage</h2>
+  <div id="dropZone">Drag & Drop your CSV file here or click to select</div>
+  <input type="file" id="fileInput" accept=".csv">
+  <p id="status" class="info">Drop a CSV file to begin configuration.</p>
+  
+  <div class="actions">
+    <button onclick="viewRecords()" id="viewButton" disabled>View Saved Records</button>
+    <button class="danger" onclick="clearAllRecords()" id="clearButton" disabled>Clear All Data</button>
+  </div>
+  
+  <div id="recordsList"></div>
+</div>
+
+<div id="dbConfigModal" class="modal">
+  <div class="modal-content">
+    <h3>CSV Data Loaded - Configure Database</h3>
+    <div class="modal-input-group">
+      <label for="dbNameInput">Database Name:</label>
+      <input type="text" id="dbNameInput" value="MyCSVData" placeholder="Enter Database Name">
+      <small style="display:block; margin-top: 5px;">Object Store Name will be **CSVRecords**</small>
+    </div>
+
+    <div class="modal-preview-table-container">
+        <p style="font-size: 14px; margin: 0 0 5px 0;">Preview (First 10 Rows):</p>
+        <div id="csvPreviewTable"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button onclick="saveConfigAndData()" id="saveButton">Save to IndexedDB</button>
+      <button class="danger" onclick="cancelConfig()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// === Global Variables ===
+let dbName = null;
+let db = null;
+let parsedCSVData = null; // Store parsed data temporarily
+let currentFileName = null; // Store the file name
+const FIXED_STORE_NAME = "CSVRecords";
+const DB_VERSION = 1; 
+
+// === Helper Functions ===
+
+function updateStatus(message, type) {
+  const status = document.getElementById("status");
+  status.textContent = message;
+  status.className = type;
+}
+
+function setActionButtonsState(disabled) {
+  document.getElementById('viewButton').disabled = disabled;
+  document.getElementById('clearButton').disabled = disabled;
+}
+
+// Function to convert data array to a static HTML table (max 10 rows)
+function buildHtmlTable(data) {
+    if (data.length === 0) return "<p>No parsable data found.</p>";
+    
+    // Get headers from the first data object, excluding internal IndexedDB fields
+    const headers = Object.keys(data[0]).filter(key => key !== 'timestamp' && key !== 'id' && key !== '_sourceFile');
+    
+    let html = '<table class="data-table"><thead><tr>';
+    
+    // Headers
+    headers.forEach(header => {
+        html += `<th>${header}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+    
+    // Rows (Max 10 for preview/display)
+    const rows = data.slice(0, 10);
+    rows.forEach(row => {
+        html += '<tr>';
+        headers.forEach(header => {
+            html += `<td>${row[header] || ''}</td>`;
+        });
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table>';
+    return html;
+}
+
+// === IndexedDB Setup and Operations ===
+
+function initializeIndexedDB(newDbName, storeName) {
+    return new Promise((resolve, reject) => {
+        setActionButtonsState(true);
+
+        const request = indexedDB.open(newDbName, DB_VERSION);
+
+        request.onupgradeneeded = function(event) {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains(storeName)) {
+                const store = db.createObjectStore(storeName, { keyPath: "id", autoIncrement: true });
+                store.createIndex("timestamp", "timestamp", { unique: false });
+            }
+        };
+
+        request.onsuccess = function(event) {
+            db = event.target.result;
+            dbName = newDbName; // Update global dbName
+            updateStatus(`✅ Database '${dbName}' ready! Store: '${storeName}'.`, "success");
+            setActionButtonsState(false);
+            resolve(db);
+        };
+
+        request.onerror = function(event) {
+            console.error("Database error:", event.target.errorCode);
+            updateStatus(`❌ Database initialization failed for ${newDbName}!`, "error");
+            setActionButtonsState(true);
+            reject(event.target.error);
+        };
+    });
+}
+
+
+function saveToIndexedDB(data, filename) {
+  if (!db) {
+    updateStatus("Error: Database not initialized!", "error");
+    return;
+  }
+
+  const tx = db.transaction(FIXED_STORE_NAME, "readwrite");
+  const store = tx.objectStore(FIXED_STORE_NAME);
+
+  let addedCount = 0;
+  data.forEach(item => {
+    item._sourceFile = filename;
+    store.add(item);
+    addedCount++;
+  });
+
+  tx.oncomplete = () => {
+    updateStatus(`✅ ${addedCount} records saved successfully to IndexedDB: ${dbName}/${FIXED_STORE_NAME}!`, "success");
+    console.log(`${addedCount} records saved from ${filename} to ${dbName}/${FIXED_STORE_NAME}`);
+    viewRecords(); // Display the newly saved records
+  };
+
+  tx.onerror = (err) => {
+    console.error("Error saving:", err);
+    updateStatus("❌ Error saving data. Check console for details.", "error");
+  };
+}
+
+function viewRecords() {
+  if (!db) {
+    updateStatus("Database not ready. Load a CSV and Save first.", "error");
+    document.getElementById("recordsList").innerHTML = "";
+    return;
+  }
+
+  const tx = db.transaction(FIXED_STORE_NAME, "readonly");
+  const store = tx.objectStore(FIXED_STORE_NAME);
+  const request = store.getAll();
+
+  request.onsuccess = function(event) {
+    const records = event.target.result;
+    const recordsList = document.getElementById("recordsList");
+    
+    // Display DB info above the table
+    let html = `<div class='record-info'>
+        Database: <strong>${dbName}</strong> | 
+        Store: <strong>${FIXED_STORE_NAME}</strong>
+    </div>`;
+    
+    if (records.length === 0) {
+      recordsList.innerHTML = html + `<p class='record-count'>No records found in database.</p>`;
+      return;
+    }
+    
+    const displayRecords = records.map(record => {
+        // Create a copy and remove internal fields for display table generation
+        const { id, timestamp, _sourceFile, ...data } = record;
+        return data;
+    });
+
+    html += `<h3>Saved Records Preview</h3>`;
+    html += `<p class='record-count'>Total records: ${records.length}</p>`;
+    
+    // Build and append the table (max 10 rows)
+    html += buildHtmlTable(displayRecords);
+    
+    if (records.length > 10) {
+      html += `<p class='record-count'>Showing 10 of ${records.length} records</p>`;
+    }
+    
+    recordsList.innerHTML = html;
+  };
+
+  request.onerror = function() {
+    updateStatus("Error retrieving records", "error");
+    document.getElementById("recordsList").innerHTML = "";
+  };
+}
+
+function clearAllRecords() {
+  if (!db) {
+    updateStatus("Database not ready. Load a CSV and Save first.", "error");
+    return;
+  }
+  
+  if (!confirm(`Are you sure you want to delete all records from the store '${FIXED_STORE_NAME}' in database '${dbName}'?`)) {
+    return;
+  }
+
+  const tx = db.transaction(FIXED_STORE_NAME, "readwrite");
+  const store = tx.objectStore(FIXED_STORE_NAME);
+  const request = store.clear();
+
+  request.onsuccess = function() {
+    updateStatus(`All records cleared successfully from ${dbName}/${FIXED_STORE_NAME}`, "success");
+    document.getElementById("recordsList").innerHTML = "";
+    console.log("All records cleared");
+  };
+
+  request.onerror = function() {
+    updateStatus("Error clearing records", "error");
+  };
+}
+
+// === CSV File Processing & Parsing ===
+function processCSVFile(file) {
+  currentFileName = file.name;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const data = parseCSV(text);
+    
+    if (data.length > 0) {
+      parsedCSVData = data;
+      showConfigModal(data);
+    } else {
+      updateStatus("No data found in CSV file", "error");
+      parsedCSVData = null;
+    }
+  };
+  reader.onerror = function() {
+    updateStatus("Error reading file", "error");
+    parsedCSVData = null;
+  };
+  reader.readAsText(file);
+  updateStatus(`📂 Reading "${file.name}"...`, "info");
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  
+  // Simple split-by-comma parser (assumes no quoted fields)
+  const headers = lines[0].split(",").map(h => h.trim());
+  const data = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue; 
+    
+    const values = lines[i].split(",").map(v => v.trim());
+    const row = {};
+    
+    // Map values to headers
+    headers.forEach((header, index) => {
+      row[header] = values[index] || "";
+    });
+    
+    data.push(row);
+  }
+  return data;
+}
+
+// === Modal Logic ===
+
+const dbConfigModal = document.getElementById("dbConfigModal");
+
+function showConfigModal(data) {
+    // 1. Pre-fill DB Name input (use existing or default)
+    document.getElementById('dbNameInput').value = dbName || "MyCSVData";
+    
+    // 2. Display the table preview
+    document.getElementById('csvPreviewTable').innerHTML = buildHtmlTable(data);
+    
+    // 3. Show modal
+    dbConfigModal.style.display = "block";
+}
+
+async function saveConfigAndData() {
+    const newDbName = document.getElementById('dbNameInput').value.trim();
+    
+    if (!newDbName) {
+        alert("Please enter a valid Database Name.");
+        return;
+    }
+    
+    if (!parsedCSVData || parsedCSVData.length === 0) {
+        updateStatus("No data available to save. Please re-upload CSV.", "error");
+        dbConfigModal.style.display = "none";
+        return;
+    }
+    
+    dbConfigModal.style.display = "none";
+    updateStatus(`Connecting to/Creating DB '${newDbName}'...`, "info");
+
+    try {
+        // Close old connection if name changes or it exists
+        if (db && newDbName !== dbName) {
+            db.close();
+            db = null;
+        }
+
+        // Initialize/Connect to the IndexedDB
+        await initializeIndexedDB(newDbName, FIXED_STORE_NAME);
+        
+        // Save the parsed data
+        saveToIndexedDB(parsedCSVData, currentFileName);
+        
+        // Clear temporary data
+        parsedCSVData = null;
+        currentFileName = null;
+    } catch (error) {
+        // Error status already updated in initializeIndexedDB
+    }
+}
+
+function cancelConfig() {
+    dbConfigModal.style.display = "none";
+    parsedCSVData = null;
+    currentFileName = null;
+    updateStatus("Database configuration cancelled. Drop a CSV file to retry.", "error");
+}
+
+// Close the modal if the user clicks outside of it
+window.onclick = function(event) {
+  if (event.target == dbConfigModal) {
+    cancelConfig();
+  }
+}
+
+// === Drag & Drop Setup ===
+const dropZone = document.getElementById("dropZone");
+const fileInput = document.getElementById("fileInput");
+
+dropZone.addEventListener("click", () => fileInput.click());
+
+dropZone.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  dropZone.classList.add("dragover");
+});
+
+dropZone.addEventListener("dragleave", () => {
+  dropZone.classList.remove("dragover");
+});
+
+dropZone.addEventListener("drop", (e) => {
+  e.preventDefault();
+  dropZone.classList.remove("dragover");
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.csv')) {
+    processCSVFile(file);
+  } else {
+    updateStatus("Please drop a valid CSV file", "error");
+  }
+});
+
+fileInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) processCSVFile(file);
+});
+</script>
+
+</body>
+</html>

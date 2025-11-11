@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IndexedDB Explorer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: auto;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            color: #007bff;
+        }
+
+        /* Information Bar Styling */
+        #db-info {
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #e6f7ff;
+            border: 1px solid #b3e0ff;
+            color: #0056b3;
+            border-radius: 4px;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* Database List Styling */
+        #database-list {
+            padding: 10px 0;
+            border-bottom: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+
+        .db-item {
+            display: block;
+            margin-bottom: 8px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .db-item:hover {
+            background-color: #e9ecef;
+        }
+
+        .db-item input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        /* Table Styling */
+        #data-table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-top: 20px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 500px;
+        }
+
+        .data-table th, .data-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            word-wrap: break-word;
+        }
+
+        .data-table th {
+            background-color: #007bff;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        
+        /* Modal / Dialog Styling */
+        dialog {
+            border: none;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            max-width: 90%;
+            width: 450px;
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #confirm-delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        #cancel-delete-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        /* Utility */
+        #message { margin-top: 20px; font-weight: bold; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 2s linear infinite;
+            display: none;
+            margin: 10px 0;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>IndexedDB Explorer</h1>
+
+        <p id="support-check">Checking browser support...</p>
+
+        <h2>Available Databases</h2>
+        <div id="database-list">
+            <p id="no-db-msg" style="display:none;">No IndexedDB databases found for this domain.</p>
+        </div>
+
+        <div class="loader" id="loader"></div>
+        <p id="message"></p>
+        
+        <div class="data-actions">
+            <button id="delete-current-db-btn" style="float:right; padding: 5px 10px; cursor: pointer; background: #dc3545; color: white; border: none; border-radius: 4px; display: none;" title="Delete Selected Database">
+                🗑️ Delete Database
+            </button>
+            <h2>Database Data (Max 10 Rows)</h2>
+        </div>
+        <div id="db-info"></div>
+
+        <div id="data-table-container">
+            <p id="table-placeholder">Select a database to view data.</p>
+        </div>
+    </div>
+
+    <dialog id="delete-modal">
+        <h3>Confirm Database Deletion</h3>
+        <p id="modal-reason-text">The selected database, <strong id="modal-db-name"></strong>, has been identified as being either:
+            <ol style="margin-top: 5px;">
+                <li id="modal-reason-empty">Completely empty (no object stores), OR</li>
+                <li id="modal-reason-error">Unreadable due to a schema loading error.</li>
+            </ol>
+        </p>
+        <p>Do you want to permanently delete this database?</p>
+        <div class="modal-buttons">
+            <button id="cancel-delete-btn">Cancel</button>
+            <button id="confirm-delete-btn">Delete Database</button>
+        </div>
+    </dialog>
+
+    <script>
+        const dbListDiv = document.getElementById('database-list');
+        const dataTableContainer = document.getElementById('data-table-container');
+        const messageElement = document.getElementById('message');
+        const loader = document.getElementById('loader');
+        const noDbMsg = document.getElementById('no-db-msg');
+        const supportCheck = document.getElementById('support-check');
+        const dbInfoElement = document.getElementById('db-info');
+        
+        // Modal elements
+        const deleteModal = document.getElementById('delete-modal');
+        const modalDbName = document.getElementById('modal-db-name');
+        const modalReasonEmpty = document.getElementById('modal-reason-empty');
+        const modalReasonError = document.getElementById('modal-reason-error');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+        
+        // NEW ELEMENTS AND VARIABLES
+        const deleteCurrentDbBtn = document.getElementById('delete-current-db-btn');
+        const modalReasonText = document.getElementById('modal-reason-text');
+        
+        let selectedDbToDelete = null;
+        let currentSelectedDbName = null; // To track the currently selected DB for manual deletion
+
+        // --- Utility Functions ---
+
+        function logMessage(msg, isError = false) {
+            messageElement.textContent = msg;
+            messageElement.style.color = isError ? 'red' : 'green';
+        }
+
+        function clearMessage() {
+            messageElement.textContent = '';
+        }
+
+        function showLoader(show) {
+            loader.style.display = show ? 'block' : 'none';
+        }
+
+        function getIndexedDB() {
+            if (!('indexedDB' in window)) {
+                supportCheck.textContent = 'IndexedDB is NOT supported by this browser.';
+                supportCheck.style.color = 'red';
+                return null;
+            }
+            supportCheck.textContent = 'IndexedDB is supported.';
+            supportCheck.style.color = 'green';
+            return window.indexedDB;
+        }
+
+        // --- Database Listing ---
+
+        async function listDatabases() {
+            clearMessage();
+            dbListDiv.innerHTML = '';
+            showLoader(true);
+            dbInfoElement.style.display = 'none';
+            dataTableContainer.innerHTML = '<p id="table-placeholder">Select a database to view data.</p>';
+            
+            // HIDE DELETE BUTTON AND CLEAR TRACKER
+            deleteCurrentDbBtn.style.display = 'none';
+            currentSelectedDbName = null;
+
+            const indexedDB = getIndexedDB();
+            if (!indexedDB || !indexedDB.databases) {
+                logMessage('Your browser does not fully support indexedDB.databases().', true);
+                showLoader(false);
+                return;
+            }
+
+            try {
+                const databases = await indexedDB.databases();
+                
+                if (databases.length === 0) {
+                    noDbMsg.style.display = 'block';
+                    showLoader(false);
+                    return;
+                }
+                noDbMsg.style.display = 'none';
+
+                databases.forEach((dbInfo) => {
+                    const label = document.createElement('label');
+                    label.className = 'db-item';
+                    
+                    const radio = document.createElement('input');
+                    radio.type = 'radio';
+                    radio.name = 'selected-db';
+                    radio.value = dbInfo.name;
+                    radio.setAttribute('data-version', dbInfo.version);
+                    radio.addEventListener('change', () => handleDatabaseSelection(dbInfo.name, dbInfo.version));
+
+                    label.appendChild(radio);
+                    label.appendChild(document.createTextNode(`${dbInfo.name} (v${dbInfo.version})`));
+                    dbListDiv.appendChild(label);
+                });
+
+            } catch (error) {
+                logMessage('Error listing databases: ' + error.message, true);
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        // --- Database Selection and Inspection ---
+
+        function handleDatabaseSelection(dbName, dbVersion) {
+            clearMessage();
+            dataTableContainer.innerHTML = '<p id="table-placeholder">Loading database schema...</p>';
+            dbInfoElement.style.display = 'none';
+            showLoader(true);
+            
+            if (deleteModal.open) deleteModal.close(); 
+            
+            // SET CURRENT SELECTED DB AND SHOW DELETE BUTTON
+            currentSelectedDbName = dbName; 
+            deleteCurrentDbBtn.style.display = 'inline-block';
+
+            const indexedDB = getIndexedDB();
+            if (!indexedDB) {
+                showLoader(false);
+                return;
+            }
+
+            // 1. Open the database 
+            const request = indexedDB.open(dbName, dbVersion);
+
+            // 2. ERROR HANDLER: If we can't open the DB at all
+            request.onerror = (event) => {
+                const errorMsg = event.target.error.message || "Unknown error";
+                logMessage(`Error opening database '${dbName}': ${errorMsg}. Prompting deletion.`, true);
+                dataTableContainer.innerHTML = `<p id="table-placeholder" style="color:red;">Error loading schema: ${errorMsg}. Database may be corrupt.</p>`;
+                showLoader(false);
+                
+                // Set reason and show modal for error
+                showDeleteConfirmationModal(dbName, 'error');
+            };
+
+            // 3. SUCCESS HANDLER: Check schema when successfully opened
+            request.onsuccess = (event) => {
+                const db = event.target.result;
+                const objectStoreNames = db.objectStoreNames;
+
+                // CHECK: If there are NO object stores
+                if (objectStoreNames.length === 0) {
+                    logMessage(`Database '${dbName}' has no object stores. Prompting deletion.`, true);
+                    dataTableContainer.innerHTML = '<p id="table-placeholder">The selected database has no object stores. Confirmation modal opened.</p>';
+                    db.close(); 
+                    showLoader(false);
+                    
+                    // Set reason and show modal for emptiness
+                    showDeleteConfirmationModal(dbName, 'empty');
+                    return;
+                }
+
+                // EXECUTE: If object stores ARE present
+                const firstStoreName = objectStoreNames[0];
+
+                dbInfoElement.innerHTML = `Database Name: <strong>${dbName}</strong><br>Object Store Name: <strong>${firstStoreName}</strong>`;
+                dbInfoElement.style.display = 'block';
+
+                logMessage(`Selected: ${dbName}. Reading data from first store: ${firstStoreName}`);
+
+                // Proceed to read data from the first object store
+                readDataFromStore(db, firstStoreName);
+            };
+        }
+
+        /**
+         * Reads up to 10 rows of data from a specified object store.
+         */
+        function readDataFromStore(db, storeName) {
+            let data = [];
+            let keys = new Set();
+            const MAX_ROWS = 10;
+            let rowCount = 0;
+
+            try {
+                const transaction = db.transaction([storeName], 'readonly');
+                const store = transaction.objectStore(storeName);
+                const request = store.openCursor();
+
+                request.onerror = (event) => {
+                    logMessage(`Error reading data from store '${storeName}': ${event.target.error.message}`, true);
+                    db.close();
+                    showLoader(false);
+                    // No deletion prompt here, as the DB has a schema (object stores exist)
+                };
+
+                request.onsuccess = (event) => {
+                    const cursor = event.target.result;
+                    if (cursor && rowCount < MAX_ROWS) {
+                        const record = cursor.value;
+                        data.push(record);
+                        Object.keys(record).forEach(key => keys.add(key));
+                        rowCount++;
+                        cursor.continue(); 
+                    } else {
+                        db.close();
+                        showLoader(false);
+                        renderDataTable(data, Array.from(keys));
+                    }
+                };
+
+            } catch (error) {
+                logMessage(`Transaction failed: ${error.message}`, true);
+                db.close();
+                showLoader(false);
+            }
+        }
+        
+        /**
+         * Renders the data into the HTML table.
+         */
+        function renderDataTable(data, headers) {
+            dataTableContainer.innerHTML = ''; 
+
+            if (data.length === 0) {
+                dataTableContainer.innerHTML = '<p id="table-placeholder">The selected object store contains no data.</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'data-table';
+            
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            headers.forEach(key => {
+                const th = document.createElement('th');
+                th.textContent = key;
+                headerRow.appendChild(th);
+            });
+
+            const tbody = table.createTBody();
+            data.forEach((record) => {
+                const row = tbody.insertRow();
+                headers.forEach(key => {
+                    const cell = row.insertCell();
+                    const value = record[key];
+                    cell.textContent = (typeof value === 'object' && value !== null) ? JSON.stringify(value) : value;
+                    cell.setAttribute('data-label', key); 
+                });
+            });
+
+            dataTableContainer.appendChild(table);
+        }
+
+        // --- Deletion Modal Functions ---
+
+        /**
+         * Displays the confirmation modal for database deletion.
+         * @param {string} dbName - The name of the database to delete.
+         * @param {('empty'|'error'|'manual')} reason - The reason the modal is being shown.
+         */
+        function showDeleteConfirmationModal(dbName, reason) {
+            selectedDbToDelete = dbName;
+            modalDbName.textContent = dbName;
+            
+            const isManual = (reason === 'manual');
+            const isError = (reason === 'error');
+            const isEmpty = (reason === 'empty');
+            
+            if (isManual) {
+                modalReasonText.innerHTML = `The selected database, <strong id="modal-db-name">${dbName}</strong>, will be permanently deleted.`;
+            } else {
+                modalReasonText.innerHTML = `The selected database, <strong id="modal-db-name">${dbName}</strong>, has been identified as being either:
+                    <ol style="margin-top: 5px;">
+                        <li id="modal-reason-empty">Completely empty (no object stores), OR</li>
+                        <li id="modal-reason-error">Unreadable due to a schema loading error.</li>
+                    </ol>`;
+                // Re-fetch the list items after innerHTML replacement
+                const reasonEmpty = modalReasonText.querySelector('#modal-reason-empty');
+                const reasonError = modalReasonText.querySelector('#modal-reason-error');
+                
+                if (reasonEmpty) reasonEmpty.style.fontWeight = isEmpty ? 'bold' : 'normal';
+                if (reasonError) reasonError.style.fontWeight = isError ? 'bold' : 'normal';
+            }
+
+            deleteModal.showModal();
+        }
+
+        /**
+         * Deletes the currently selected database.
+         */
+        function deleteSelectedDatabase() {
+            if (!selectedDbToDelete) return;
+            
+            const dbName = selectedDbToDelete;
+            showLoader(true);
+            deleteModal.close(); 
+            logMessage(`Attempting to delete database: ${dbName}...`, false);
+
+            const indexedDB = getIndexedDB();
+            if (!indexedDB) {
+                showLoader(false);
+                return;
+            }
+
+            const DBDeleteRequest = indexedDB.deleteDatabase(dbName);
+
+            DBDeleteRequest.onerror = (event) => {
+                logMessage(`Error deleting database '${dbName}': ${event.target.error.message}`, true);
+                showLoader(false);
+            };
+
+            DBDeleteRequest.onblocked = (event) => {
+                logMessage(`Deletion of '${dbName}' is blocked. Please close any other tabs using this database.`, true);
+                showLoader(false);
+            };
+
+            DBDeleteRequest.onsuccess = (event) => {
+                logMessage(`Database '${dbName}' deleted successfully.`, false);
+                // Refresh the list
+                listDatabases();
+                dataTableContainer.innerHTML = '<p id="table-placeholder">Database deleted. Select another one.</p>';
+                dbInfoElement.style.display = 'none';
+                showLoader(false);
+            };
+        }
+
+        // --- Event Listeners for Modal Buttons and New Delete Button ---
+        
+        confirmDeleteBtn.addEventListener('click', deleteSelectedDatabase);
+        
+        cancelDeleteBtn.addEventListener('click', () => {
+            deleteModal.close();
+            logMessage('Database deletion cancelled.', false);
+        });
+        
+        // NEW EVENT LISTENER FOR MANUAL DELETE BUTTON
+        deleteCurrentDbBtn.addEventListener('click', () => {
+            if (currentSelectedDbName) {
+                showDeleteConfirmationModal(currentSelectedDbName, 'manual');
+            } else {
+                logMessage('No database is currently selected for deletion.', true);
+            }
+        });
+
+        // --- Initialization ---
+        listDatabases();
+    </script>
+</body>
+</html>
