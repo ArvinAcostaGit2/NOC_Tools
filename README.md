@@ -1,4 +1,4 @@
-# [ QuickLinks ]
+# [ QuickLinks ](https://github.com/ArvinAcostaGit2/NOC_Tools/tree/main/QuickLinks)
 # Dynamic Personal Quick Links Dashboard
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
