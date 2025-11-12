@@ -1,16 +1,16 @@
 
 
-### QuickLinks_V2.html
+## 🎯 QuickLinks_V2.html
 
-> DynamicQuickLink6.html
+- DynamicQuickLink6.html
 > Using default CardLink icons
 > 
 > 
 
 
-### QuickLinks_V3.html
+## 🎯 QuickLinks_V3.html
 
-> DynamicQuickLink7.html
+- DynamicQuickLink7.html
 > Using URL favicon to display CardLink icon
 > 
 > 
