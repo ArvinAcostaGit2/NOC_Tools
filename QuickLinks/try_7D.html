@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quick Links – Guest View</title>
+  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+  
+  <style>
+    :root{
+        --bg:#f5f5f5;
+        --card:#fff;
+        --muted:#666;
+        --accent:#111;
+        --shadow:0 2px 5px rgba(0,0,0,0.12);
+    }
+    *{box-sizing:border-box}
+    body{
+        margin:0;
+        font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+        background:var(--bg);
+        color:#222;
+        -webkit-font-smoothing:antialiased;
+        -moz-osx-font-smoothing:grayscale;
+    }
+    header{
+        background:var(--accent);
+        color:#fff;
+        padding:16px;
+    }
+    header h1{
+        margin:0;
+        font-size:18px;
+        font-weight:600;
+    }
+    .container-custom{
+        max-width:1400px;
+        margin:20px auto;
+        padding:0 16px 60px;
+    }
+    .section-title{
+        font-size:13px;
+        font-weight:600;
+        margin:6px 0 14px;
+        color:var(--muted);
+    }
+    .shortcut-grid{
+        display:grid;
+        grid-template-columns:repeat(auto-fill, minmax(120px,1fr));
+        gap:16px;
+        padding: 4px;
+        border-radius: 12px;
+    }
+    
+    .shortcut{
+        border-radius:12px;
+        box-shadow:var(--shadow);
+        text-align:center;
+        padding:8px;
+        display:block;
+        gap:6px;
+        text-decoration:none;
+        color:inherit;
+        position:relative;
+        overflow:hidden;
+        transition:transform .14s ease, box-shadow .14s ease;
+        min-height:125px;
+        cursor: default;
+    }
+
+    .shortcut:hover{ 
+        transform:translateY(-6px); 
+        box-shadow:0 8px 22px rgba(0,0,0,0.16); 
+    }
+    
+    .shortcut::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        z-index: 0;
+        opacity: 0; 
+        border-radius: inherit;
+        background: conic-gradient(
+            #ff0000, #ff8c00, #ffff00, #00ff00, #00ffff, #0000ff, #8a2be2, #ff0000
+        );
+        transition: opacity .3s ease;
+    }
+    
+    .shortcut:hover::before {
+        opacity: 1; 
+        animation: rotateBorder 3s linear infinite; 
+    }
+
+    @keyframes rotateBorder {
+        to { transform: rotate(1turn); }
+    }
+    
+    .shortcut-inner {
+        position: absolute;
+        inset: 2px;
+        background: var(--card); 
+        border-radius: 10px;
+        z-index: 1;
+        padding:12px;
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        gap:8px;
+        height: calc(100% - 4px);
+    }
+    
+    .icon{
+        width:44px;
+        height:44px;
+        border-radius:50%;
+        background:#e9e9e9;
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        font-size:18px; 
+        margin:0 auto;
+        color: #111;
+        font-weight: 900;
+        overflow: hidden;
+    }
+    
+    .icon img {
+        width: 35px;
+        height: 35px;
+        object-fit: contain;
+    }
+    
+    .icon.has-favicon {
+        font-size: 0;
+    }
+    
+    .shortcut .title{
+        font-size:12px;
+        font-weight:500;
+        color:#111;
+        word-break:break-word;
+    }
+    .shortcut .url{
+        font-size:10px;
+        color:var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis; 
+        width: 100%;
+        word-break: break-all;
+    }
+
+    .empty{
+        padding:26px;
+        border-radius:12px;
+        background:linear-gradient(180deg,#fff,#fbfbfb);
+        text-align:center;
+        color:var(--muted);
+        box-shadow:var(--shadow);
+    }
+    
+    .tooltip {
+        font-size: 12px;
+    }
+    .tooltip-inner {
+        max-width: 300px;
+        padding: 6px 10px;
+        text-align: left;
+        word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="container-fluid">
+    <div class="row align-items-center justify-content-between">
+      <div class="col-auto">
+        <h1>My Personal Quick Links</h1>
+      </div>
+      <div class="col-auto">
+        <div style="color:#ddd;font-size:13px;">Guest View – Read Only</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container-custom" role="main">
+  <div id="linksContainer"></div>
+  <div style="height:18px"></div>
+  <div class="text-muted" style="font-size:13px;">Click a tile to open. Data is shared with admin.</div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// ======================
+// INDEXEDDB SETUP (SAME AS ADMIN)
+// ======================
+const DB_NAME = 'QuickLinksDB';
+const STORE_NAME = 'links';
+let db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = (e) => {
+      db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = (e) => {
+      db = e.target.result;
+      resolve(db);
+    };
+    request.onerror = (e) => reject(e);
+  });
+}
+
+async function idbGetAll() {
+  await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// ======================
+// STATE
+// ======================
+let allLinks = [];
+let tooltipInstances = [];
+
+// ======================
+// LOAD DATA
+// ======================
+async function loadAllLinks() {
+  try {
+    const stored = await idbGetAll();
+    if (stored.length > 0) {
+      allLinks = stored.sort((a, b) => {
+        const cat = a.category.localeCompare(b.category);
+        if (cat !== 0) return cat;
+        return a.sortOrder - b.sortOrder;
+      });
+    } else {
+      allLinks = [];  // ← Empty on first run
+    }
+  } catch (err) {
+    console.error("IndexedDB load failed:", err);
+    allLinks = [];
+  }
+  return allLinks;
+}
+
+// ======================
+// RENDER (READ-ONLY) – FIXED
+// ======================
+async function renderAll(){
+  tooltipInstances.forEach(tooltip => tooltip.dispose());
+  tooltipInstances = [];
+  
+  const sortedItems = [...allLinks].sort((a, b) => {
+      const catCompare = a.category.localeCompare(b.category);
+      if (catCompare !== 0) return catCompare;
+      return a.sortOrder - b.sortOrder;
+  });
+
+  let categories = [...new Set(allLinks.map(x => x.category))].sort((a, b) => a.localeCompare(b));
+  
+  const linksContainer = document.getElementById('linksContainer');
+  linksContainer.innerHTML='';
+
+  for(const cat of categories){
+    const catItems = sortedItems.filter(x => x.category === cat);
+    if(!catItems.length) continue;
+    
+    const titleEl = document.createElement('div');
+    titleEl.className = 'section-title';
+    titleEl.textContent = cat;
+    
+    const grid = document.createElement('div');
+    grid.className = 'shortcut-grid';
+
+    catItems.forEach(item => {
+      const a = document.createElement('a');
+      a.className = 'shortcut';
+      a.href = item.link;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.dataset.id = item.id;
+      a.setAttribute('data-bs-toggle', 'tooltip');
+      a.setAttribute('data-bs-placement', 'top');
+      a.setAttribute('data-bs-title', item.link);
+
+      const inner = document.createElement('div');
+      inner.className = 'shortcut-inner';
+
+      const iconDiv = document.createElement('div');
+      iconDiv.className = 'icon';
+      
+      const faviconExists = item.favicon_link !== undefined && item.favicon_link !== null;
+      const fallbackText = (item.label || '').charAt(0).toUpperCase();
+
+      if (faviconExists) {
+        const trimmed = item.favicon_link.trim();
+
+        if (trimmed === "") {
+          iconDiv.textContent = fallbackText;
+        }
+        else if (trimmed === "...") {
+          let domain;
+          try { domain = new URL(item.link).hostname.replace(/^www\./, ''); } catch { domain = ''; }
+          if (domain) {
+            const googleFavicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+            const img = document.createElement('img');
+            img.src = googleFavicon;
+            img.alt = item.label || 'Icon';
+            img.onload = function() {
+              if (/chrome.*\.png$/.test(this.src) || /icons\/product\/chrome/.test(this.src)) {
+                iconDiv.innerHTML = fallbackText;
+              } else {
+                iconDiv.classList.add('has-favicon');
+                iconDiv.appendChild(this);
+              }
+            };
+            img.onerror = () => { iconDiv.innerHTML = fallbackText; };
+            iconDiv.textContent = fallbackText;
+          } else {
+            iconDiv.textContent = fallbackText;
+          }
+        }
+        else {
+          const img = document.createElement('img');
+          img.src = trimmed;
+          img.alt = item.label || 'Icon';
+          img.onerror = () => {
+            let domain;
+            try { domain = new URL(item.link).hostname.replace(/^www\./, ''); } catch { domain = ''; }
+            if (domain) {
+              const googleFavicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+              const fallbackImg = new Image();
+              fallbackImg.src = googleFavicon;
+              fallbackImg.onload = function() {
+                if (/chrome.*\.png$/.test(this.src)) {
+                  iconDiv.innerHTML = fallbackText;
+                } else {
+                  iconDiv.classList.add('has-favicon');
+                  iconDiv.appendChild(this);
+                }
+              };
+              fallbackImg.onerror = () => { iconDiv.innerHTML = fallbackText; };
+              iconDiv.innerHTML = '';
+              iconDiv.appendChild(fallbackImg);
+            } else {
+              iconDiv.innerHTML = fallbackText;
+            }
+          };
+          iconDiv.classList.add('has-favicon');
+          iconDiv.appendChild(img);
+        }
+      } else {
+        iconDiv.textContent = fallbackText;
+      }
+
+      if (item.color) {
+        iconDiv.style.backgroundColor = item.color;
+        const hex = item.color.substring(1);
+        const r = parseInt(hex.substring(0,2),16);
+        const g = parseInt(hex.substring(2,4),16);
+        const b = parseInt(hex.substring(4,6),16);
+        const isDark = (r*0.299 + g*0.587 + b*0.114)/255 < 0.5;
+        iconDiv.style.color = isDark ? '#fff' : '#111';
+      }
+
+      const title = document.createElement('div');
+      title.className = 'title';
+      title.textContent = item.label || item.link;
+
+      const urlDiv = document.createElement('div');
+      urlDiv.className = 'url';
+      urlDiv.textContent = item.link;
+
+      inner.appendChild(iconDiv);
+      inner.appendChild(title);
+      inner.appendChild(urlDiv);
+      a.appendChild(inner);
+      grid.appendChild(a);
+    });
+
+    linksContainer.appendChild(titleEl);
+    linksContainer.appendChild(grid);
+  }
+
+  if (!sortedItems.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'No shortcuts available.';
+    linksContainer.appendChild(empty);
+  }
+
+  // ← TOOLTIPS INITIALIZED HERE
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  tooltipInstances = [...tooltipTriggerList].map(el => new bootstrap.Tooltip(el));
+}
+
+// ======================
+// INIT
+// ======================
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadAllLinks();  // ← Loads from IndexedDB
+  await renderAll();     // ← Renders + tooltips
+});
+</script>
+
+</body>
+</html>

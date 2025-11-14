@@ -1,0 +1,56 @@
+[
+  {
+    "id": 9,
+    "label": "wer",
+    "link": "https://www.maribank.ph",
+    "category": "1.gdfgdf",
+    "color": "#fbff0a",
+    "favicon_link": "...",
+    "sortOrder": 0
+  },
+  {
+    "id": 7,
+    "label": "T-Mobile",
+    "link": "https://t-mobile.com/business",
+    "category": "1.gdfgdf",
+    "color": "#ffffff",
+    "favicon_link": "https://www.google.com/s2/favicons?domain=t-mobile.com",
+    "sortOrder": 1
+  },
+  {
+    "id": 6,
+    "label": "Maribank",
+    "link": "https://www.maribank.ph",
+    "category": "1.gdfgdf",
+    "color": "#ffffff",
+    "favicon_link": "https://www.google.com/s2/favicons?domain=maribank.ph",
+    "sortOrder": 2
+  },
+  {
+    "id": 1,
+    "label": "GEA",
+    "link": "https://www4.eperformax.com/GEA/GEA_AdminMenu.aspx",
+    "category": "APPP",
+    "color": "#ffffff",
+    "favicon_link": "https://www.google.com/s2/favicons?domain=eperformax.com",
+    "sortOrder": 1
+  },
+  {
+    "id": 8,
+    "label": "BIR",
+    "link": "https://orus.bir.gov.ph/search/tinverification",
+    "category": "Tools",
+    "color": "#ffffff",
+    "favicon_link": "...",
+    "sortOrder": 0
+  },
+  {
+    "id": 5,
+    "label": "Typing",
+    "link": "https://www.typingtest.com",
+    "category": "Tools",
+    "color": "#29f5f1",
+    "favicon_link": "https://www.google.com/s2/favicons?domain=typingtest.com",
+    "sortOrder": 1
+  }
+]

@@ -1,0 +1,65 @@
+[
+  {
+    "id": 1,
+    "label": "TMB",
+    "link": "https://t-mobile.com/business",
+    "category": "app",
+    "color": "#ffffff",
+    "favicon_link": "https://www.google.com/s2/favicons?domain=t-mobile.com",
+    "sortOrder": 0
+  },
+  {
+    "id": 3,
+    "label": "RBD",
+    "link": "https://www.radpowerbikes.com",
+    "category": "program",
+    "color": "#ffffff",
+    "favicon_link": "https://www.google.com/s2/favicons?domain=radpowerbikes.com",
+    "sortOrder": 0
+  },
+  {
+    "id": 4,
+    "label": "BIR TIN Verification",
+    "link": "https://orus.bir.gov.ph/search/tinverification",
+    "category": "program",
+    "color": "#ffffff",
+    "favicon_link": "...",
+    "sortOrder": 1
+  },
+  {
+    "id": 2,
+    "label": "PP",
+    "link": "https://www.paypal.com",
+    "category": "tena",
+    "color": "#ffffff",
+    "favicon_link": "https://www.google.com/s2/favicons?domain=paypal.com",
+    "sortOrder": 0
+  },
+  {
+    "id": 6,
+    "label": "pag",
+    "link": "https://www.pagibigfundservices.com/virtualpagibig_profile/Verification/",
+    "category": "tena",
+    "color": "#ffffff",
+    "favicon_link": "",
+    "sortOrder": 1
+  },
+  {
+    "id": 5,
+    "label": "SSS Login",
+    "link": "https://sso.sss.gov.ph/oam/server/obrareq.cgi?ECID-Context=1.000LV3kXMYI6qIWFLzVK8A0004FY001FNC%3BkXjE",
+    "category": "tena",
+    "color": "#ffffff",
+    "favicon_link": "https://sso.sss.gov.ph/oam/server/obrareq.cgi?ECID-Context=1.000LV3kXMYI6qIWFLzVK8A0004FY001FNC%3BkXjE",
+    "sortOrder": 2
+  },
+  {
+    "id": 7,
+    "label": "Rec",
+    "link": "https://vocaroo.com/",
+    "category": "Tools",
+    "color": "#ffffff",
+    "favicon_link": "https://vocaroo.com/favicon.ico",
+    "sortOrder": 0
+  }
+]
