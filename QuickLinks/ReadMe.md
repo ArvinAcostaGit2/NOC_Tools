@@ -21,6 +21,10 @@ A personalized, organized **quick links manager** that runs entirely in your bro
 - Export/import your links as JSON  
 
 ## 🚀 How to Use It
+### MAIN FILES
+- QuickLink_Admin.html  - For Admin use
+- QuickLink_Guest.html  - For Guest use
+- QuickLink_Uploader.html  - For Admin use to upload json file
 
 ### 1. Setup (30 seconds)
 
