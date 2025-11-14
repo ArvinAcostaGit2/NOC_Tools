@@ -26,6 +26,19 @@ A personalized, organized **quick links manager** that runs entirely in your bro
 - QuickLink_Guest.html  - For Guest use
 - QuickLink_Uploader.html  - For Admin use to upload json file
 
+```bash
+favicon_link		        Result
+""			                Text("D")
+"..."			            Google S2 → real icon or text
+"https://custom.ico"	    Try → fail → Google S2 → text
+undefined		            Text
+
+```
+
+
+
+
+
 ### 1. Setup (30 seconds)
 
 ```bash
