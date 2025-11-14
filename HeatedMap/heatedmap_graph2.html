@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Device Scan Heatmap</title>
+  <style>
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+      margin:40px;background:#0d1117;color:#c9d1d9;
+    }
+    h1{color:#58a6ff;text-align:center;margin-bottom:10px;}
+    .subtitle{text-align:center;color:#8b949e;font-size:14px;margin-bottom:30px;}
+
+    .upload-container{
+      max-width:500px;margin:0 auto 40px;padding:20px;
+      border:2px dashed #30363d;border-radius:12px;background:#161b22;
+      text-align:center;
+    }
+    input[type="file"]{display:none;}
+    .upload-btn{
+      background:#238636;color:white;padding:12px 24px;border-radius:8px;
+      cursor:pointer;display:inline-block;font-weight:600;
+    }
+    .upload-btn:hover{background:#2ea043;}
+    #fileName{margin-top:10px;font-size:14px;color:#8b949e;}
+
+    .year-selector{
+      max-width:960px;margin:0 auto 20px;
+      display:flex;gap:12px;align-items:center;
+      padding:10px 0;
+    }
+    .year-link{
+      color:#58a6ff;cursor:pointer;padding:6px 12px;
+      border-radius:6px;font-size:14px;font-weight:500;
+      transition:background .2s;
+    }
+    .year-link:hover{background:#21262d;}
+    .year-link.active{background:#1f6feb;color:white;}
+
+    .calendar-container{max-width:960px;margin:0 auto;user-select:none;}
+    .calendar{
+      display:grid;
+      grid-template-columns:30px repeat(53,15px);
+      grid-template-rows:repeat(7,15px) 20px;
+      gap:3px;
+      position:relative;
+    }
+    .day-labels{
+      grid-column:1;grid-row:1/8;
+      display:flex;flex-direction:column;justify-content:space-between;
+      font-size:12px;color:#8b949e;padding-top:3px;
+    }
+    .day-labels div:nth-child(odd){opacity:0;}
+    .month-labels{
+      grid-column:2/54;grid-row:8;
+      position:relative;
+      height:20px;
+      font-size:11px;color:#8b949e;
+      padding-top:5px;
+    }
+    .month-label{
+      position:absolute;
+      white-space:nowrap;
+    }
+    .heatmap{
+      grid-column:2/54;grid-row:1/8;
+      display:grid;
+      grid-template-columns:repeat(53,15px);
+      grid-template-rows:repeat(7,15px);
+      grid-auto-flow:column;
+      gap:3px;
+    }
+    .day{
+      width:15px;height:15px;background:#161b22;
+      border-radius:3px;transition:background .2s;
+    }
+    .level-0{background:#161b22;}
+    .level-1{background:#0e4429;}
+    .level-2{background:#006d32;}
+    .level-3{background:#26a641;}
+    .level-4{background:#39d353;}
+
+    .legend{
+      display:flex;align-items:center;justify-content:flex-end;
+      gap:5px;margin-top:15px;font-size:12px;color:#8b949e;
+    }
+    .legend .box{width:15px;height:15px;border-radius:3px;}
+
+    .tooltip{
+      position:absolute;background:#21262d;color:#c9d1d9;
+      padding:10px 16px;border-radius:8px;font-size:14px;
+      pointer-events:none;opacity:0;transition:opacity .2s;
+      z-index:100;box-shadow:0 4px 8px rgba(0,0,0,.3);white-space:nowrap;
+      font-weight:500;
+    }
+  </style>
+</head>
+<body>
+  <h1>Device Scan Activity Heatmap</h1>
+  <p class="subtitle" id="yearRange">Upload JSON to see activity</p>
+
+  <div class="upload-container">
+    <label class="upload-btn">
+      Choose JSON File
+      <input type="file" id="jsonFile" accept=".json">
+    </label>
+    <p id="fileName">No file selected</p>
+  </div>
+
+  <div class="year-selector" id="yearSelector"></div>
+
+  <div class="calendar-container">
+    <div class="calendar">
+      <div class="day-labels">
+        <div>Sun</div><div>Mon</div><div>Tue</div>
+        <div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+      </div>
+      <div class="month-labels" id="monthLabels"></div>
+      <div class="heatmap" id="heatmap"></div>
+    </div>
+    <div class="legend">
+      <span>Less</span>
+      <div class="box level-0"></div><div class="box level-1"></div>
+      <div class="box level-2"></div><div class="box level-3"></div>
+      <div class="box level-4"></div><span>More</span>
+    </div>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    const fileInput = document.getElementById('jsonFile');
+    const fileNameDisplay = document.getElementById('fileName');
+    const yearRange = document.getElementById('yearRange');
+    const heatmapEl = document.getElementById('heatmap');
+    const monthLabels = document.getElementById('monthLabels');
+    const tooltip = document.getElementById('tooltip');
+    const yearSelector = document.getElementById('yearSelector');
+
+    let allData = null;
+    let selectedYear = new Date().getFullYear();
+
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      fileNameDisplay.textContent = `Loaded: ${file.name}`;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try { 
+          allData = JSON.parse(ev.target.result);
+          initializeYearSelector();
+          generateHeatmap(selectedYear);
+        }
+        catch (err) { alert('Invalid JSON'); console.error(err); }
+      };
+      reader.readAsText(file);
+    });
+
+    function initializeYearSelector() {
+      const currentYear = new Date().getFullYear();
+      const years = [currentYear - 3, currentYear - 2, currentYear - 1, currentYear];
+      
+      yearSelector.innerHTML = '';
+      years.forEach(year => {
+        const link = document.createElement('div');
+        link.className = 'year-link';
+        if (year === selectedYear) link.classList.add('active');
+        link.textContent = year;
+        link.addEventListener('click', () => {
+          selectedYear = year;
+          document.querySelectorAll('.year-link').forEach(l => l.classList.remove('active'));
+          link.classList.add('active');
+          generateHeatmap(year);
+        });
+        yearSelector.appendChild(link);
+      });
+    }
+
+    function generateHeatmap(year) {
+      if (!allData) return;
+
+      const counts = {};
+      const dates = [];
+
+      allData.forEach(entry => {
+        const ts = entry.windows_install_date?.trim();
+        if (!ts) return;
+        const [datePart] = ts.split(' ');
+        const [m,d,y] = datePart.split('/').map(Number);
+        if (!m||!d||!y) return;
+        const date = new Date(y, m-1, d);
+        if (isNaN(date)) return;
+        const key = date.toISOString().split('T')[0];
+        counts[key] = (counts[key]||0) + 1;
+        dates.push(date);
+      });
+
+      yearRange.textContent = year;
+
+      // Start from first Sunday on or before January 1st
+      const start = new Date(year, 0, 1);
+      start.setDate(start.getDate() - start.getDay());
+
+      // End on last Saturday on or after December 31st
+      const end = new Date(year, 11, 31);
+      end.setDate(end.getDate() + (6 - end.getDay()));
+
+      const days = [];
+      for (let d=new Date(start); d<=end; d.setDate(d.getDate()+1)) days.push(new Date(d));
+
+      const vals = Object.values(counts).filter(v => {
+        // Only count values from selected year for level calculation
+        return true;
+      });
+      const max = vals.length ? Math.max(...vals) : 0;
+      const levels = [0,
+        Math.ceil(max*0.25), Math.ceil(max*0.5),
+        Math.ceil(max*0.75), max];
+
+      heatmapEl.innerHTML = '';
+      days.forEach((date, idx) => {
+        const key = date.toISOString().split('T')[0];
+        const cnt = counts[key]||0;
+        const lvl = cnt===0 ? 0 :
+                    cnt<=levels[1]?1:
+                    cnt<=levels[2]?2:
+                    cnt<=levels[3]?3:4;
+
+        const sq = document.createElement('div');
+        sq.className = `day level-${lvl}`;
+        sq.dataset.date = key;
+        sq.dataset.count = cnt;
+
+        sq.addEventListener('mouseenter', ev => {
+          const fmt = date.toLocaleDateString('en-US',{
+            weekday:'short',month:'short',day:'numeric',year:'numeric'
+          });
+          tooltip.textContent = `${cnt} scan${cnt!==1?'s':''} on ${fmt}`;
+          tooltip.style.opacity = 1;
+          tooltip.style.left = `${ev.pageX+12}px`;
+          tooltip.style.top  = `${ev.pageY-38}px`;
+        });
+        sq.addEventListener('mousemove', ev => {
+          tooltip.style.left = `${ev.pageX+12}px`;
+          tooltip.style.top  = `${ev.pageY-38}px`;
+        });
+        sq.addEventListener('mouseleave',()=>{tooltip.style.opacity=0;});
+
+        heatmapEl.appendChild(sq);
+      });
+
+      // Month labels - position at start of each month
+      monthLabels.innerHTML = '';
+      let lastMonth = -1;
+      const squareSize = 15;
+      const gap = 3;
+      
+      days.forEach((date, idx) => {
+        const weekCol = Math.floor(idx / 7);
+        const month = date.getMonth();
+
+        if (month !== lastMonth && date.getDate() === 1) {
+          lastMonth = month;
+          const lbl = document.createElement('div');
+          lbl.className = 'month-label';
+          lbl.textContent = date.toLocaleDateString('en-US', { month: 'short' });
+          lbl.style.left = `${weekCol * (squareSize + gap)}px`;
+          monthLabels.appendChild(lbl);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
