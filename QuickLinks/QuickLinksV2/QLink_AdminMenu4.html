@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Personal Quick Links – Ribbon UI</title>
+  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  
+<style>
+    /* ---------------------------------- */
+    /* CSS Variables & Global Reset       */
+    /* ---------------------------------- */
+    :root{
+        --bg:#f5f5f5;
+        --card:#fff;
+        --muted:#666;
+        --accent:#111;
+        --shadow:0 2px 5px rgba(0,0,0,0.12);
+        --primary-color: #007bff;
+    }
+    *{box-sizing:border-box}
+    body{
+        margin:0;
+        font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        background:var(--bg);
+        color:#222;
+        -webkit-font-smoothing:antialiased;
+        -moz-osx-font-smoothing:grayscale;
+    }
+    
+    /* ---------------------------------- */
+    /* RIBBON UX STYLES                   */
+    /* ---------------------------------- */
+    .ribbon {
+      background: var(--bg);
+      border-bottom: 1px solid #ccc;
+    }
+
+    .ribbon-tabs {
+      list-style: none;
+      display: flex;
+      margin: 0;
+      padding: 0 16px; 
+      overflow-x: auto; 
+      background: #ddd;
+      border-bottom: 1px solid #bbb;
+      white-space: nowrap; 
+      scrollbar-width: none; /* Firefox */
+    }
+    .ribbon-tabs::-webkit-scrollbar { 
+      display: none; /* Chrome, Safari, Opera */
+    }
+
+    .ribbon-tabs .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 14px;
+      border-right: 1px solid #bbb;
+      transition: background 0.1s ease;
+      flex-shrink: 0; 
+      /* NEW STYLES for icon alignment */
+      display: flex;
+      align-items: center;
+      gap: 6px; 
+    }
+
+    .ribbon-tabs .tab.active {
+      background: var(--card);
+      font-weight: 600;
+      border-bottom: 1px solid var(--card);
+      margin-bottom: -1px; 
+    }
+    
+    .ribbon-tabs .tab:hover:not(.active) {
+        background: #e5e5e5;
+    }
+
+    .ribbon-panels {
+      background: var(--card);
+      min-height: 200px;
+      padding: 10px 16px; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    .panel {
+      display: none;
+      padding: 10px 0;
+    }
+
+    .panel.active {
+      display: block;
+    }
+    
+    /* ---------------------------------- */
+    /* Link List Styles                   */
+    /* ---------------------------------- */
+    .link-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .link-list-item {
+        margin-bottom: 8px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .link-item-anchor {
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+        text-decoration: none;
+        color: inherit;
+        position: relative;
+        transition: background-color .15s ease;
+        word-break: break-word;
+    }
+    .link-item-anchor:hover {
+        background-color: #fcfcfc;
+    }
+
+    .icon {
+        flex-shrink: 0;
+        font-size: 18px;
+        font-weight: 900;
+        color: #111;
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        background: #e9e9e9;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+    }
+
+    .icon img {
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+    }
+    .icon.has-favicon {
+        font-size: 0;
+    }
+    
+    .link-text {
+        overflow: hidden;
+        flex-grow: 1;
+        padding-right: 40px; 
+    }
+    
+    .link-text .title{
+        font-size: 15px;
+        font-weight: 500;
+        color: #111;
+        line-height: 1.2;
+    }
+    .link-text .url{
+        font-size: 11px;
+        color: var(--muted); 
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis; 
+        width: 100%;
+        display: block;
+    }
+    
+    .menu-btn{
+        position: absolute;
+        top: 50%;
+        right: 0px;
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: .8;
+        z-index: 2;
+        transition: opacity .15s ease;
+    }
+
+    .link-item-anchor:hover .menu-btn { opacity: 1; }
+    .menu-btn:hover{ background:rgba(0,0,0,0.08); }
+    
+    .menu{
+        position:absolute;
+        top: 36px;
+        right: 0; 
+        background:#fff;
+        border-radius:8px;
+        box-shadow:0 8px 20px rgba(0,0,0,0.14);
+        min-width:120px;
+        z-index: 30;
+        overflow:hidden;
+        display:none;
+        flex-direction:column;
+    }
+    .menu.visible{ display:flex; }
+    .menu button{
+        border:0;
+        background:transparent;
+        padding:8px 12px;
+        text-align:left;
+        cursor:pointer;
+        width:100%;
+        font-size:13px;
+    }
+    .menu button:hover{ background:rgba(0,0,0,0.04); }
+
+    /* ---------------------------------- */
+    /* Header & Other Styles              */
+    /* ---------------------------------- */
+    header{
+        background:var(--accent);
+        color:#fff;
+        padding:10px 16px;
+    }
+    header h1{
+        margin:0;
+        font-size:18px;
+        font-weight:600;
+        cursor:pointer;
+    }
+    .container-custom{
+        max-width:800px; 
+        margin:0 auto; 
+        padding:0;
+    }
+    .header-icon-btn { 
+        background:rgba(255,255,255,0.1);
+        border:0;
+        border-radius:6px;
+        width:36px;
+        height:36px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        cursor:pointer;
+        color:#fff;
+        transition:background .2s ease;
+    }
+    .header-icon-btn:hover{ background:rgba(255,255,255,0.2); }
+
+    .empty{
+        padding:26px;
+        border-radius:8px;
+        background:#f8f8f8;
+        text-align:center;
+        color:var(--muted);
+    }
+    .text-tip {
+        margin: 20px 16px 60px;
+        font-size:13px;
+        color: var(--muted);
+    }
+
+    /* --- WELCOME TAB STYLES --- */
+    .welcome-panel-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 250px; 
+        text-align: center;
+        padding: 50px 20px;
+        border-radius: 8px;
+        background: #fdfdfd; 
+    }
+    .welcome-panel-content h2 {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--accent);
+        /* margin-bottom is handled inline now for alignment */
+    }
+    .welcome-clock {
+        font-size: 18px;
+        color: var(--muted);
+        font-weight: 500;
+        margin-bottom: 20px;
+    }
+</style>
+</head>
+<body>
+<header>
+  <div class="container-fluid">
+    <div class="row align-items-center justify-content-between">
+      <div class="col-auto">
+        <h1 id="addHeaderBtn">+ My Personal Quick Links</h1>
+      </div>
+      <div class="col-auto">
+        <div class="d-flex align-items-center gap-3">
+          <div class="d-flex gap-2">
+            <button id="exportBtn" class="header-icon-btn" title="Export links as JSON">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+              </svg>
+            </button>
+            <button id="importBtn" class="header-icon-btn" title="Import links from JSON">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+              </svg>
+            </button>
+          </div>
+          <div style="color:#ddd;font-size:13px;">Tools & Idea by | Arvin Acosta</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="importFileInput" accept=".json" style="display:none;" />
+</header>
+
+<main class="container-custom" role="main">
+    <div class="ribbon">
+        <ul class="ribbon-tabs" id="categoryTabs"></ul> 
+
+        <div class="ribbon-panels" id="linksContainer">
+            </div>
+    </div>
+    <div class="text-tip">Tip: Click a category tab to switch views. Click a link to open. Use three dots to edit or delete. **Scroll the tabs left/right using your mouse wheel!**</div>
+</main>
+
+<div class="modal fade" id="linkModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Add Link</h2>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="inputLabel" class="form-label">Display Label</label>
+          <input id="inputLabel" type="text" class="form-control" placeholder="e.g. D1 Registration Form" />
+        </div>
+        <div class="mb-3">
+          <label for="inputUrl" class="form-label">URL or File Path</label>
+          <input id="inputUrl" type="text" class="form-control" placeholder="https://example.com or file:///C:/path/to/file.pdf" />
+        </div>
+        <div class="mb-3">
+          <label for="inputCategory" class="form-label">Category</label>
+          <input id="inputCategory" type="text" class="form-control" placeholder="e.g. Work, Personal, Shopping, etc." list="categoryList" />
+          <datalist id="categoryList"></datalist>
+          <small class="text-muted" style="font-size: 11px;">Type a new category or select an existing one</small>
+        </div>
+        <div class="mb-3">
+            <label for="inputFavicon" class="form-label">Favicon URL (Optional)</label>
+            <input id="inputFavicon" type="text" class="form-control" placeholder="... for Google S2, leave blank for text" />
+            <small class="text-muted" style="font-size: 11px;">Use "..." for Google S2, "" for text, or direct URL</small>
+        </div>
+        <div class="mb-3">
+          <label for="inputColor" class="form-label">Icon Background Color (Optional)</label>
+          <input id="inputColor" type="color" class="form-control form-control-color w-100" value="#e9e9e9" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelBtn" class="btn btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button id="saveBtn" class="btn btn-custom-primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+<script>
+// ======================
+// CONSTANTS
+// ======================
+const ALL_LINKS_VIEW = 'ALL_LINKS_VIEW'; 
+const EPERFORMAX_ICON_URL = 'https://www.google.com/s2/favicons?domain=eperformax.com';
+
+// ======================
+// INDEXEDDB SETUP (UNCHANGED)
+// ======================
+const DB_NAME = 'QuickLinksDB';
+const STORE_NAME = 'links';
+let db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = (e) => {
+      db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = (e) => {
+      db = e.target.result;
+      resolve(db);
+    };
+    request.onerror = (e) => reject(e);
+  });
+}
+
+async function idbGetAll() {
+  await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function idbPut(item) {
+  await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.put(item);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function idbDelete(id) {
+  await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.delete(id);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function idbClear() {
+  await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.clear();
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// ======================
+// STATE
+// ======================
+let allLinks = [];
+let lastSelectedColor = localStorage.getItem('QLinkLastColor') || '#e9e9e9';
+let modalInstance = null;
+let tooltipInstances = [];
+let editingId = null;
+let isSaving = false; 
+let activeCategory = localStorage.getItem('QLinkActiveCategory') || ALL_LINKS_VIEW;
+
+// ======================
+// PERSISTENCE & SORTING UTILITIES (UNCHANGED)
+// ======================
+async function loadAllLinks() {
+  try {
+    const stored = await idbGetAll();
+    
+    // Sort logic moved here to ensure state is always sorted correctly after load
+    allLinks = stored.sort((a, b) => {
+      const cat = a.category.localeCompare(b.category);
+      if (cat !== 0) return cat;
+      return a.sortOrder - b.sortOrder;
+    });
+    
+  } catch (err) {
+    console.error("IndexedDB load failed:", err);
+    allLinks = [];
+  }
+  return allLinks;
+}
+
+function reIndexLinks(links) {
+    const currentLinks = [...links];
+    
+    const categorizedLinks = currentLinks.reduce((acc, link) => {
+      acc[link.category] = acc[link.category] || [];
+      acc[link.category].push(link); 
+      return acc;
+    }, {});
+
+    let finalLinks = [];
+    // Sort categories alphabetically
+    const sortedCategories = Object.keys(categorizedLinks).sort((a, b) => a.localeCompare(b));
+    
+    for (const cat of sortedCategories) {
+      const catLinks = categorizedLinks[cat];
+      // Assign new sortOrder based on position within the category
+      for (let i = 0; i < catLinks.length; i++) {
+          catLinks[i].sortOrder = i; 
+          finalLinks.push(catLinks[i]);
+      }
+    }
+    return finalLinks;
+}
+
+async function saveCRUDImmediate() {
+    if (isSaving) return; 
+    isSaving = true;
+    
+    try {
+        const finalLinks = reIndexLinks(allLinks); 
+        
+        await idbClear();
+        for (const link of finalLinks) {
+          await idbPut(link);
+        }
+        
+        allLinks = finalLinks;
+        
+    } catch (err) {
+        console.error("IndexedDB CRUD save failed:", err);
+        alert('Failed to save changes!');
+    } finally {
+        isSaving = false;
+    }
+}
+
+
+// ======================
+// CLOCK FUNCTION
+// ======================
+function updateClock() {
+    const clockElement = document.getElementById('welcomeClock');
+    if (clockElement) {
+        const now = new Date();
+        const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+
+        // Formatting date and time
+        const formattedTime = now.toLocaleTimeString(undefined, timeOptions);
+        const formattedDate = now.toLocaleDateString(undefined, dateOptions);
+
+        clockElement.innerHTML = `${formattedDate}<br>${formattedTime}`;
+    }
+}
+
+
+// ======================
+// RENDER 
+// ======================
+function activateTab(categoryName) {
+    activeCategory = categoryName;
+    localStorage.setItem('QLinkActiveCategory', categoryName);
+
+    document.querySelectorAll('.ribbon-tabs .tab').forEach(tab => {
+        if (tab.getAttribute('data-category') === categoryName) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+
+    document.querySelectorAll('#linksContainer .panel').forEach(panel => {
+        const panelId = panel.id.replace('panel-', '');
+        if (panelId === categoryName.replace(/\s/g, '_')) {
+            panel.classList.add('active');
+        } else {
+            panel.classList.remove('active');
+        }
+    });
+}
+
+function createLinkList(items, isAllLinksView) {
+    
+    // --- MODIFIED LOGIC: Welcome/Loading Screen for ALL_LINKS_VIEW ---
+    if (isAllLinksView) {
+        const welcomeDiv = document.createElement('div');
+        welcomeDiv.className = 'welcome-panel-content';
+        
+        // NEW: Logo and Title container for better alignment
+        const logoTitleContainer = document.createElement('div');
+        logoTitleContainer.style.cssText = 'display: flex; align-items: center; justify-content: center; margin-bottom: 10px;';
+        
+        // NEW: Image element (Welcome Logo)
+        const logoImg = document.createElement('img');
+        logoImg.src = EPERFORMAX_ICON_URL;
+        logoImg.alt = 'Welcome Logo';
+        logoImg.width = 36;
+        logoImg.height = 36;
+        logoImg.style.marginRight = '10px';
+
+        const welcomeTitle = document.createElement('h2');
+        welcomeTitle.textContent = 'Welcome!';
+        welcomeTitle.style.marginBottom = '0'; 
+        
+        logoTitleContainer.appendChild(logoImg);
+        logoTitleContainer.appendChild(welcomeTitle);
+        
+        const clockDiv = document.createElement('div');
+        clockDiv.id = 'welcomeClock';
+        clockDiv.className = 'welcome-clock';
+
+        const instructionDiv = document.createElement('p');
+        instructionDiv.innerHTML = `Use the **+ My Personal Quick Links** button above to add your first shortcut, or click on a category tab to view links.`;
+        instructionDiv.style.color = 'var(--muted)';
+        
+        welcomeDiv.appendChild(logoTitleContainer); // Append the new container
+        welcomeDiv.appendChild(clockDiv);
+        welcomeDiv.appendChild(instructionDiv);
+        
+        const ul = document.createElement('ul');
+        ul.className = 'link-list';
+        ul.appendChild(welcomeDiv);
+        return ul;
+    }
+    // --- END MODIFIED LOGIC ---
+
+    const ul = document.createElement('ul');
+    ul.className = 'link-list';
+    
+    // Logic for empty dynamic categories (UNCHANGED)
+    if (items.length === 0 && !isAllLinksView) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = `No shortcuts in this category yet. Use + Quick Links to add one.`;
+        ul.appendChild(empty);
+        return ul;
+    }
+
+    // Link item generation loop (UNCHANGED)
+    items.forEach(item => {
+        const li = document.createElement('li');
+        li.className = 'link-list-item';
+        
+        const a = document.createElement('a');
+        a.className = 'link-item-anchor';
+        a.href = item.link;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.dataset.id = item.id;
+        
+        a.setAttribute('data-bs-toggle', 'tooltip');
+        a.setAttribute('data-bs-placement', 'right');
+        a.setAttribute('data-bs-title', item.link);
+
+        // Icon creation logic
+        const iconDiv=document.createElement('div');
+        iconDiv.className='icon';
+        
+        const faviconExists = item.favicon_link !== undefined && item.favicon_link !== null;
+        const fallbackText = (item.label || '').charAt(0).toUpperCase();
+
+        if (faviconExists) {
+            const trimmed = item.favicon_link.trim();
+
+            if (trimmed === "") {
+                iconDiv.textContent = fallbackText;
+            }
+            else if (trimmed === "...") {
+                let domain;
+                try {
+                    domain = new URL(item.link).hostname.replace(/^www\./, '');
+                } catch {
+                    domain = '';
+                }
+                if (domain) {
+                    const googleFavicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+                    const img = document.createElement('img');
+                    img.src = googleFavicon;
+                    img.alt = item.label || 'Icon';
+                    img.onload = function() {
+                      if (/chrome.*\.png$/.test(this.src) || /icons\/product\/chrome/.test(this.src)) {
+                        iconDiv.innerHTML = fallbackText;
+                      } else {
+                        iconDiv.classList.add('has-favicon');
+                        iconDiv.appendChild(this);
+                      }
+                    };
+                    img.onerror = () => {
+                      iconDiv.innerHTML = fallbackText;
+                    };
+                    iconDiv.textContent = fallbackText;
+                } else {
+                    iconDiv.textContent = fallbackText;
+                }
+            }
+            else {
+                const img = document.createElement('img');
+                img.src = trimmed;
+                img.alt = item.label || 'Icon';
+                img.onerror = () => {
+                    let domain;
+                    try {
+                        domain = new URL(item.link).hostname.replace(/^www\./, '');
+                    } catch {
+                        domain = '';
+                    }
+                    if (domain) {
+                        const googleFavicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+                        const fallbackImg = document.createElement('img');
+                        fallbackImg.src = googleFavicon;
+                        fallbackImg.alt = item.label || 'Icon';
+                        fallbackImg.onload = function() {
+                            if (/chrome.*\.png$/.test(this.src) || /icons\/product\/chrome/.test(this.src)) {
+                                iconDiv.innerHTML = fallbackText;
+                            } else {
+                                iconDiv.classList.add('has-favicon');
+                                iconDiv.innerHTML = '';
+                                iconDiv.appendChild(this);
+                            }
+                        };
+                        fallbackImg.onerror = () => {
+                            iconDiv.innerHTML = fallbackText;
+                        };
+                        iconDiv.innerHTML = '';
+                        iconDiv.appendChild(fallbackImg);
+                    } else {
+                        iconDiv.innerHTML = fallbackText;
+                    }
+                };
+                iconDiv.classList.add('has-favicon');
+                iconDiv.appendChild(img);
+            }
+        } else {
+            iconDiv.textContent = fallbackText;
+        }
+
+        // Color application logic
+        if(item.color){
+            iconDiv.style.backgroundColor=item.color;
+            const hex = item.color.substring(1);
+            const r = parseInt(hex.substring(0,2),16);
+            const g = parseInt(hex.substring(2,4),16);
+            const b = parseInt(hex.substring(4,6),16);
+            const isDark = (r*0.299 + g*0.587 + b*0.114)/255 < 0.5;
+            iconDiv.style.color = isDark ? '#fff' : '#111';
+        }
+
+        const linkTextDiv = document.createElement('div');
+        linkTextDiv.className = 'link-text';
+        
+        const title=document.createElement('div');
+        title.className='title';
+        title.textContent=item.label||item.link;
+
+        const urlDiv=document.createElement('div');
+        urlDiv.className='url';
+        urlDiv.textContent=item.link;
+
+        // Menu button (three dots)
+        const menuBtn = document.createElement('button');
+        menuBtn.className = 'menu-btn';
+        menuBtn.setAttribute('aria-label', 'Open menu');
+        menuBtn.innerHTML = `
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="pointer-events:none;">
+            <circle cx="12" cy="5" r="2"/>
+            <circle cx="12" cy="12" r="2"/>
+            <circle cx="12" cy="19" r="2"/>
+          </svg>
+        `;
+
+        const menu = document.createElement('div');
+        menu.className = 'menu';
+        menu.innerHTML = `<button data-action="edit">Edit</button><button data-action="delete">Delete</button>`;
+
+        // Event Listeners 
+        menuBtn.addEventListener('click', ev => {
+            ev.stopPropagation();
+            ev.preventDefault();
+            closeAllMenus();
+            menu.classList.toggle('visible');
+        });
+
+        menu.addEventListener('click', ev => {
+            ev.stopPropagation();
+            ev.preventDefault();
+            const action = ev.target.getAttribute('data-action');
+            if (action === 'edit') openModalForEdit(item.id);
+            else if (action === 'delete') if (confirm('Delete this shortcut?')) removeItem(item.id);
+            menu.classList.remove('visible');
+        });
+        
+        // Assemble the parts
+        linkTextDiv.appendChild(title);
+        linkTextDiv.appendChild(urlDiv);
+
+        a.appendChild(iconDiv);
+        a.appendChild(linkTextDiv);
+        a.appendChild(menuBtn);
+        a.appendChild(menu);
+
+        li.appendChild(a);
+        ul.appendChild(li);
+    });
+    
+    return ul;
+}
+
+async function renderAll(){
+    tooltipInstances.forEach(tooltip => tooltip.dispose());
+    tooltipInstances = [];
+    
+    const sortedItems = allLinks;
+    const linksContainer = document.getElementById('linksContainer');
+    const categoryTabs = document.getElementById('categoryTabs');
+    
+    linksContainer.innerHTML='';
+    categoryTabs.innerHTML='';
+
+    let categories = [...new Set(allLinks.map(x => x.category))].sort((a, b) => a.localeCompare(b));
+    
+    
+    // --- STATIC "ALL LINKS" TAB ---
+    // Tab itself still uses the EperforMAX icon as requested previously
+    const allLinksTab = document.createElement('li');
+    allLinksTab.className = 'tab';
+    
+    allLinksTab.innerHTML = `
+      <img src="${EPERFORMAX_ICON_URL}" alt="E-Performax Icon" width="16" height="16" style="margin-top: -1px;"/>
+      All Links
+    `;
+    
+    allLinksTab.setAttribute('data-category', ALL_LINKS_VIEW);
+    allLinksTab.onclick = () => activateTab(ALL_LINKS_VIEW);
+    categoryTabs.appendChild(allLinksTab);
+
+    // 2. Create Static Panel for All Links
+    const allLinksPanel = document.createElement('div');
+    allLinksPanel.className = 'panel';
+    allLinksPanel.id = `panel-${ALL_LINKS_VIEW}`;
+    
+    // This calls createLinkList which now includes the logo in the welcome screen
+    allLinksPanel.appendChild(createLinkList(sortedItems, true)); 
+    linksContainer.appendChild(allLinksPanel);
+
+    // --- DYNAMIC CATEGORY TABS (UNCHANGED) ---
+
+    for(const cat of categories){
+        const catItems = sortedItems.filter(x => x.category === cat);
+        const panelId = `panel-${cat.replace(/\s/g, '_')}`;
+
+        // 3. Create Dynamic Tab
+        const tabLi = document.createElement('li');
+        tabLi.className = 'tab';
+        tabLi.textContent = cat;
+        tabLi.setAttribute('data-category', cat);
+        tabLi.onclick = () => activateTab(cat);
+        categoryTabs.appendChild(tabLi);
+
+        // 4. Create Dynamic Panel
+        const panelDiv = document.createElement('div');
+        panelDiv.className = 'panel';
+        panelDiv.id = panelId;
+        
+        // This call generates the actual link list for the category (second argument is false)
+        panelDiv.appendChild(createLinkList(catItems, false));
+        linksContainer.appendChild(panelDiv);
+    }
+    
+    // 5. Activate the correct tab/panel after creation
+    if (!categories.includes(activeCategory) && activeCategory !== ALL_LINKS_VIEW) {
+        activeCategory = ALL_LINKS_VIEW; 
+    }
+
+    activateTab(activeCategory);
+
+    // Reinitialize tooltips for new elements
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltipInstances = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+    document.addEventListener('click', ev => {
+        const targetMenu = ev.target.closest('.menu');
+        const targetMenuBtn = ev.target.closest('.menu-btn');
+        if (!targetMenu && !targetMenuBtn) {
+            closeAllMenus();
+        }
+    });
+}
+
+
+// ======================
+// MODAL & CRUD (UNCHANGED)
+// ======================
+function closeAllMenus(){
+  document.querySelectorAll('.menu.visible').forEach(m=>m.classList.remove('visible'));
+}
+
+function openModalForAdd(){
+  editingId=null;
+  modalTitle.textContent='Add Link';
+  inputLabel.value=''; 
+  inputUrl.value='';
+  inputCategory.value = activeCategory !== ALL_LINKS_VIEW ? activeCategory : '';
+  inputFavicon.value='';
+  inputColor.value=lastSelectedColor;
+  updateCategoryDatalist();
+  modalInstance.show();
+  setTimeout(() => inputLabel.focus(), 300); 
+}
+
+async function openModalForEdit(id){
+  await loadAllLinks();
+  let item = allLinks.find(x=>x.id==id);
+  if(!item){ alert('Item not found'); return; }
+  editingId=item.id;
+  modalTitle.textContent='Edit Link';
+  inputLabel.value=item.label||''; 
+  inputUrl.value=item.link||'';
+  inputCategory.value=item.category||'';
+  inputFavicon.value=item.favicon_link||'';
+  inputColor.value=item.color||'#e9e9e9';
+  updateCategoryDatalist();
+  modalInstance.show();
+  setTimeout(() => inputLabel.focus(), 300); 
+}
+
+saveBtn.onclick = async () => {
+  const label = inputLabel.value.trim(); 
+  const link = inputUrl.value.trim();
+  const category = inputCategory.value.trim() || 'Uncategorized';
+  const color = inputColor.value.trim();
+  const favicon_link = inputFavicon.value.trim();
+
+  if(!label || !link){ 
+    alert('Please provide both label (name) and URL/Path.');
+    return;
+  }
+
+  localStorage.setItem('QLinkLastColor', color);
+  lastSelectedColor = color;
+
+  const newItem = {label, link, category, color, favicon_link}; 
+  
+  await loadAllLinks(); 
+  
+  if(editingId){
+    let existingItem = allLinks.find(x => x.id == editingId);
+    if (existingItem) {
+        Object.assign(existingItem, newItem);
+    }
+  } else {
+    let lastId = allLinks.length ? Math.max(...allLinks.map(x=>x.id||0)) : 0;
+    newItem.id = lastId + 1;
+    newItem.sortOrder = allLinks.filter(x => x.category === category).length; 
+    allLinks.push(newItem);
+  }
+  
+  await saveCRUDImmediate();
+  
+  activeCategory = category;
+  
+  modalInstance.hide();
+  await renderAll();
+  await updateCategoryDatalist();
+};
+
+async function removeItem(id){
+  const itemToDelete = allLinks.find(x => x.id === id);
+  const currentCategoryLinks = allLinks.filter(x => x.category === itemToDelete.category);
+  const isLastInCat = currentCategoryLinks.length === 1;
+
+  allLinks = allLinks.filter(x => x.id !== id);
+  
+  await saveCRUDImmediate();
+  
+  if (isLastInCat && activeCategory !== ALL_LINKS_VIEW) {
+      activeCategory = ALL_LINKS_VIEW;
+  }
+
+  await renderAll();
+  await updateCategoryDatalist();
+}
+
+// ======================
+// EXPORT / IMPORT (UNCHANGED)
+// ======================
+document.getElementById('exportBtn').onclick = async () => {
+  try{
+    await loadAllLinks();
+    const itemsToExport = allLinks.map(item => ({
+        id: item.id,
+        label: item.label,
+        link: item.link,
+        category: item.category,
+        color: item.color,
+        favicon_link: item.favicon_link,
+        sortOrder: item.sortOrder, 
+    }));
+    
+    if(!itemsToExport.length){ alert('No links to export.'); return; }
+    const json = JSON.stringify(itemsToExport, null, 2);
+    const blob = new Blob([json], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `quicklinks-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }catch(err){
+    console.error(err);
+    alert('Export failed.');
+  }
+};
+
+const importFileInput = document.getElementById('importFileInput');
+document.getElementById('importBtn').onclick = () => importFileInput.click();
+importFileInput.onchange = async ev => {
+  const file = ev.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    let imported = JSON.parse(text);
+    if(!Array.isArray(imported)){ alert('Invalid format.'); return; }
+    if(!confirm(`Import ${imported.length} link(s)?\nNote: This will replace current links.`)) return;
+    
+    let lastId = 0;
+    allLinks = imported.map((item, idx) => {
+      const newId = item.id || (1000 + idx);
+      lastId = Math.max(lastId, newId);
+      return {
+        id: newId,
+        label: item.label || '',
+        link: item.link || '',
+        category: item.category || 'Uncategorized',
+        color: item.color || '#e9e9e9',
+        favicon_link: item.favicon_link || '',
+        sortOrder: item.sortOrder ?? 0
+      };
+    }).filter(x => x.label && x.link);
+    
+    await saveCRUDImmediate(); 
+    
+    activeCategory = ALL_LINKS_VIEW;
+    
+    await renderAll();
+    await updateCategoryDatalist();
+    alert(`Imported ${allLinks.length} link(s)!`);
+  }catch(err){
+    console.error(err);
+    alert('Import failed. Check file format.');
+  } finally {
+    importFileInput.value = '';
+  }
+};
+
+// ======================
+// INIT
+// ======================
+document.addEventListener('DOMContentLoaded', async () => {
+  modalInstance = new bootstrap.Modal(document.getElementById('linkModal'));
+  await loadAllLinks();
+
+  if (!localStorage.getItem('QLinkActiveCategory')) {
+      activeCategory = ALL_LINKS_VIEW;
+  }
+  
+  await renderAll();
+  await updateCategoryDatalist();
+
+  // Initial clock update and set interval
+  updateClock();
+  setInterval(updateClock, 1000); 
+
+  // --- MOUSE WHEEL SCROLLING LOGIC ---
+  const categoryTabs = document.getElementById('categoryTabs');
+  if (categoryTabs) {
+    categoryTabs.addEventListener('wheel', (event) => {
+      if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+        event.preventDefault(); 
+        categoryTabs.scrollLeft += event.deltaY;
+      }
+    }, { passive: false }); 
+  }
+  // ----------------------------------------
+
+  document.getElementById('addHeaderBtn').onclick = e => {
+    e.preventDefault();
+    openModalForAdd();
+  };
+  
+  document.addEventListener('keydown', ev=>{
+    if(ev.key==='Escape' && modalInstance._isShown) modalInstance.hide();
+    if((ev.ctrlKey||ev.metaKey) && ev.key.toLowerCase()==='k'){
+      ev.preventDefault();
+      openModalForAdd();
+    }
+  });
+});
+
+async function updateCategoryDatalist() {
+  const categories = [...new Set(allLinks.map(x => x.category))].sort((a, b) => a.localeCompare(b));
+  const datalist = document.getElementById('categoryList');
+  datalist.innerHTML = '';
+  categories.forEach(cat => {
+    const option = document.createElement('option');
+    option.value = cat;
+    datalist.appendChild(option);
+  });
+}
+</script>
+
+</body>
+</html>

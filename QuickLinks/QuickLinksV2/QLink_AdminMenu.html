@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Personal Quick Links – Dynamic Menu</title>
+  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  
+<style>
+    /* ---------------------------------- */
+    /* CSS Variables & Global Reset       */
+    /* ---------------------------------- */
+    :root{
+        --bg:#f5f5f5;
+        --card:#fff;
+        --muted:#666;
+        --accent:#111;
+        --shadow:0 2px 5px rgba(0,0,0,0.12);
+        --primary-color: #007bff; /* Added for visual cohesion */
+    }
+    *{box-sizing:border-box}
+    body{
+        margin:0;
+        /* Using a more common font stack for wider platform availability */
+        font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+        background:var(--bg);
+        color:#222;
+        -webkit-font-smoothing:antialiased;
+        -moz-osx-font-smoothing:grayscale;
+    }
+    
+    /* ---------------------------------- */
+    /* Header & Layout                    */
+    /* ---------------------------------- */
+    header{
+        background:var(--accent);
+        color:#fff;
+        padding:16px;
+    }
+    header h1{
+        margin:0;
+        font-size:18px;
+        font-weight:600;
+        cursor:pointer;
+    }
+    .container-custom{
+        max-width:800px; /* Narrower for list view */
+        margin:20px auto;
+        padding:0 16px 60px;
+    }
+    .section-title{
+        /* No longer used for display, but kept for consistency if needed */
+        display: none; 
+    }
+
+    /* ---------------------------------- */
+    /* NEW: Dropdown Menu Styles          */
+    /* ---------------------------------- */
+    .category-card {
+        margin-bottom: 12px;
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        background: var(--card);
+    }
+    
+    /* The category button/toggle */
+    .dropdown-toggle-custom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 16px 20px;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--accent);
+        background-color: transparent;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background .15s ease;
+    }
+    .dropdown-toggle-custom:hover {
+        background-color: #f0f0f0;
+    }
+
+    /* The actual menu */
+    .category-dropdown-menu {
+        padding: 0;
+        border: none;
+        border-radius: 0 0 12px 12px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.14);
+        width: 100%;
+        margin: 0;
+        z-index: 1000;
+    }
+    
+    .dropdown-item-link {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        text-decoration: none;
+        color: inherit;
+        border-radius: 0;
+        position: relative;
+        transition: background-color .15s ease;
+        word-break: break-word; /* Ensure long titles wrap */
+        white-space: normal;
+    }
+    .dropdown-item-link:hover, .dropdown-item-link:focus {
+        background-color: #f7f7f7;
+    }
+    
+    /* Content wrapper for better layout */
+    .dropdown-item-content {
+        display: flex;
+        align-items: center;
+        flex-grow: 1;
+        padding-right: 36px; /* Space for the menu button */
+    }
+    
+    .icon{
+        flex-shrink: 0;
+        font-size: 18px;
+        font-weight: 900;
+        color: #111;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #e9e9e9;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+    }
+    
+    .icon img {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+    }
+    .icon.has-favicon {
+        font-size: 0;
+    }
+
+    .link-text {
+        overflow: hidden;
+        margin-right: 8px;
+    }
+    
+    .dropdown-item-link .title{
+        font-size: 14px;
+        font-weight: 500;
+        color: #111;
+        line-height: 1.2;
+    }
+    .dropdown-item-link .url{
+        font-size: 11px;
+        color: var(--muted); 
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis; 
+        width: 100%;
+        display: block;
+    }
+
+    /* Menu button position for dropdown items */
+    .menu-btn{
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        transform: translateY(-50%);
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: .9;
+        z-index: 2;
+    }
+
+    .menu-btn:hover{ background:rgba(0,0,0,0.08); }
+    .menu{
+        position:absolute;
+        top: 36px;
+        right: 8px; /* Position relative to the dropdown item */
+        background:#fff;
+        border-radius:8px;
+        box-shadow:0 8px 20px rgba(0,0,0,0.14);
+        min-width:120px;
+        z-index: 30;
+        overflow:hidden;
+        display:none;
+        flex-direction:column;
+    }
+    .menu.visible{ display:flex; }
+    .menu button{
+        border:0;
+        background:transparent;
+        padding:8px 12px;
+        text-align:left;
+        cursor:pointer;
+        width:100%;
+        font-size:13px;
+    }
+    .menu button:hover{ background:rgba(0,0,0,0.04); }
+    
+    /* ---------------------------------- */
+    /* Other Styles (Kept from original)  */
+    /* ---------------------------------- */
+    .shortcut-grid {
+        /* Hide the old grid styles */
+        display: none;
+    }
+
+    .btn-custom-secondary{ 
+        background:#f0f0f0; 
+        color:#111;
+        border:0;
+        padding:8px 12px;
+        border-radius:8px;
+        font-weight:600;
+        font-size:13px;
+    }
+    .btn-custom-primary{ 
+        background:var(--accent); 
+        color:#fff;
+        border:0;
+        padding:8px 12px;
+        border-radius:8px;
+        font-weight:600;
+        font-size:13px;
+        transition: background .2s ease;
+    }
+    .btn-custom-secondary:hover{ 
+        background:#e5e5e5; 
+        color:#111;
+    }
+    .btn-custom-primary:hover{ 
+        background:#000; 
+        color:#fff;
+    }
+    
+    .header-icon-btn{
+        background:rgba(255,255,255,0.1);
+        border:0;
+        border-radius:6px;
+        width:36px;
+        height:36px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        cursor:pointer;
+        color:#fff;
+        transition:background .2s ease;
+    }
+    .header-icon-btn:hover{
+        background:rgba(255,255,255,0.2);
+    }
+    
+    .empty{
+        padding:26px;
+        border-radius:12px;
+        background:linear-gradient(180deg,#fff,#fbfbfb);
+        text-align:center;
+        color:var(--muted);
+        box-shadow:var(--shadow);
+    }
+    
+    /* Removing D&D specific styles */
+    .shortcut.dragging, .shortcut.drop-before, .shortcut.drop-after, .shortcut-grid.highlight-drop {
+        /* Not needed in this version */
+        display: none !important;
+    }
+</style>
+</head>
+<body>
+<header>
+  <div class="container-fluid">
+    <div class="row align-items-center justify-content-between">
+      <div class="col-auto">
+        <h1 id="addHeaderBtn">+ My Personal Quick Links</h1>
+      </div>
+      <div class="col-auto">
+        <div class="d-flex align-items-center gap-3">
+          
+          <div class="d-flex gap-2">
+            <button id="exportBtn" class="header-icon-btn" title="Export links as JSON">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+              </svg>
+            </button>
+            <button id="importBtn" class="header-icon-btn" title="Import links from JSON">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+              </svg>
+            </button>
+          </div>
+          <div style="color:#ddd;font-size:13px;">Tools & Idea by | Arvin Acosta</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <input type="file" id="importFileInput" accept=".json" style="display:none;" />
+</header>
+
+<main class="container-custom" role="main">
+  <div id="linksContainer">
+    </div>
+  <div style="height:18px"></div>
+  <div class="text-muted" style="font-size:13px;">Tip: Click a category to view links. Click a link in the menu to open. Use three dots to edit or delete.</div>
+</main>
+
+<div class="modal fade" id="linkModal" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Add Link</h2>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="inputLabel" class="form-label">Display Label</label>
+          <input id="inputLabel" type="text" class="form-control" placeholder="e.g. D1 Registration Form" />
+        </div>
+        <div class="mb-3">
+          <label for="inputUrl" class="form-label">URL or File Path</label>
+          <input id="inputUrl" type="text" class="form-control" placeholder="https://example.com or file:///C:/path/to/file.pdf" />
+        </div>
+        <div class="mb-3">
+          <label for="inputCategory" class="form-label">Category</label>
+          <input id="inputCategory" type="text" class="form-control" placeholder="e.g. Work, Personal, Shopping, etc." list="categoryList" />
+          <datalist id="categoryList"></datalist>
+          <small class="text-muted" style="font-size: 11px;">Type a new category or select an existing one</small>
+        </div>
+        <div class="mb-3">
+            <label for="inputFavicon" class="form-label">Favicon URL (Optional)</label>
+            <input id="inputFavicon" type="text" class="form-control" placeholder="... for Google S2, leave blank for text" />
+            <small class="text-muted" style="font-size: 11px;">Use "..." for Google S2, "" for text, or direct URL</small>
+        </div>
+        <div class="mb-3">
+          <label for="inputColor" class="form-label">Icon Background Color (Optional)</label>
+          <input id="inputColor" type="color" class="form-control form-control-color w-100" value="#e9e9e9" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelBtn" class="btn btn-custom-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button id="saveBtn" class="btn btn-custom-primary">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+<script>
+// ======================
+// INDEXEDDB SETUP (UNCHANGED)
+// ======================
+const DB_NAME = 'QuickLinksDB';
+const STORE_NAME = 'links';
+let db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = (e) => {
+      db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = (e) => {
+      db = e.target.result;
+      resolve(db);
+    };
+    request.onerror = (e) => reject(e);
+  });
+}
+
+async function idbGetAll() {
+  await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function idbPut(item) {
+  await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.put(item);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function idbDelete(id) {
+  await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.delete(id);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function idbClear() {
+  await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const request = store.clear();
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// ======================
+// STATE (MODIFIED: Removed D&D state variables)
+// ======================
+let allLinks = [];
+let lastSelectedColor = localStorage.getItem('QLinkLastColor') || '#e9e9e9';
+let modalInstance = null;
+let tooltipInstances = [];
+let editingId = null;
+let isSaving = false; // Prevents race condition during DB save
+// REMOVED: draggedId, dropPlacement, targetId, linksModified, saveSortBtn reference
+
+// ======================
+// PERSISTENCE & SORTING UTILITIES (MODIFIED: Removed D&D manual save)
+// ======================
+async function loadAllLinks() {
+  try {
+    const stored = await idbGetAll();
+    
+    // Sort logic moved here to ensure state is always sorted correctly after load
+    allLinks = stored.sort((a, b) => {
+      const cat = a.category.localeCompare(b.category);
+      if (cat !== 0) return cat;
+      return a.sortOrder - b.sortOrder;
+    });
+    
+  } catch (err) {
+    console.error("IndexedDB load failed:", err);
+    allLinks = [];
+  }
+  return allLinks;
+}
+
+// Utility to properly re-index sortOrder after a change (D&D or CRUD) (UNCHANGED)
+function reIndexLinks(links) {
+    const currentLinks = [...links];
+    
+    const categorizedLinks = currentLinks.reduce((acc, link) => {
+      acc[link.category] = acc[link.category] || [];
+      acc[link.category].push(link); 
+      return acc;
+    }, {});
+
+    let finalLinks = [];
+    // Sort categories alphabetically
+    const sortedCategories = Object.keys(categorizedLinks).sort((a, b) => a.localeCompare(b));
+    
+    for (const cat of sortedCategories) {
+      const catLinks = categorizedLinks[cat];
+      // Assign new sortOrder based on position within the category
+      // NOTE: Since D&D is removed, the sort order here is stable based on the order
+      // they were inserted into the map/array after the filter/reduce.
+      for (let i = 0; i < catLinks.length; i++) {
+          catLinks[i].sortOrder = i; 
+          finalLinks.push(catLinks[i]);
+      }
+    }
+    return finalLinks;
+}
+
+// REMOVED: saveLinksToDB (D&D manual save)
+
+// NEW: Function for Add/Edit/Delete - Immediate save (original logic) (UNCHANGED)
+async function saveCRUDImmediate() {
+    if (isSaving) return; 
+    isSaving = true;
+    
+    try {
+        const finalLinks = reIndexLinks(allLinks); 
+        
+        await idbClear();
+        for (const link of finalLinks) {
+          await idbPut(link);
+        }
+        
+        allLinks = finalLinks;
+        
+    } catch (err) {
+        console.error("IndexedDB CRUD save failed:", err);
+        alert('Failed to save CRUD changes!');
+    } finally {
+        isSaving = false;
+    }
+}
+
+
+// ======================
+// DRAG & DROP (REMOVED ALL D&D HANDLERS)
+// ======================
+function handleDragStart(ev) {} 
+function handleDragEnd(ev) {}
+function handleDragOver(ev) { ev.preventDefault(); }
+function handleDragEnter(ev) {}
+function handleDragLeave(ev) {}
+async function handleDrop(ev) {}
+
+
+// ======================
+// RENDER (HEAVILY MODIFIED for Dropdown Menu UI)
+// ======================
+async function renderAll(){
+  // Tooltip logic kept for dropdown items
+  tooltipInstances.forEach(tooltip => tooltip.dispose());
+  tooltipInstances = [];
+  
+  const sortedItems = allLinks;
+
+  let categories = [...new Set(allLinks.map(x => x.category))].sort((a, b) => a.localeCompare(b));
+  
+  const linksContainer = document.getElementById('linksContainer');
+  linksContainer.innerHTML='';
+  
+  for(const cat of categories){
+    const catItems = sortedItems.filter(x => x.category === cat);
+    if (!catItems.length) continue;
+    
+    // 1. Create the container div for the dropdown
+    const dropdownDiv = document.createElement('div');
+    // Bootstrap class: dropdown, Custom class: category-card
+    dropdownDiv.className = 'dropdown category-card'; 
+    
+    // 2. Create the Category Button (Dropdown Toggle)
+    const toggleButton = document.createElement('button');
+    toggleButton.className = 'dropdown-toggle-custom dropdown-toggle';
+    toggleButton.type = 'button';
+    toggleButton.setAttribute('data-bs-toggle', 'dropdown');
+    toggleButton.setAttribute('aria-expanded', 'false');
+    toggleButton.innerHTML = `
+        <div style="display:flex; align-items:center; gap:8px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;">
+                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            ${cat}
+        </div>
+    `;
+
+    // 3. Create the Dropdown Menu (Container for links)
+    const menuDiv = document.createElement('ul');
+    menuDiv.className = 'dropdown-menu category-dropdown-menu';
+    menuDiv.setAttribute('data-category', cat);
+    
+    // 4. Populate the menu with links (Dropdown Items)
+    catItems.forEach(item => {
+      const li = document.createElement('li');
+      
+      const a = document.createElement('a');
+      a.className = 'dropdown-item-link';
+      a.href = item.link;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.dataset.id = item.id;
+      // D&D attributes are skipped since it's removed
+      
+      a.setAttribute('data-bs-toggle', 'tooltip');
+      a.setAttribute('data-bs-placement', 'right');
+      a.setAttribute('data-bs-title', item.link);
+
+      const inner = document.createElement('div');
+      inner.className = 'dropdown-item-content';
+
+      // Menu button (three dots)
+      const menuBtn = document.createElement('button');
+      menuBtn.className = 'menu-btn';
+      menuBtn.setAttribute('aria-label', 'Open menu');
+      menuBtn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="pointer-events:none;">
+          <circle cx="12" cy="5" r="2"/>
+          <circle cx="12" cy="12" r="2"/>
+          <circle cx="12" cy="19" r="2"/>
+        </svg>
+      `;
+
+      const menu = document.createElement('div');
+      menu.className = 'menu';
+      menu.innerHTML = `<button data-action="edit">Edit</button><button data-action="delete">Delete</button>`;
+
+      // Icon creation logic (Kept UNCHANGED)
+      const iconDiv=document.createElement('div');
+      iconDiv.className='icon';
+      
+      const faviconExists = item.favicon_link !== undefined && item.favicon_link !== null;
+      const fallbackText = (item.label || '').charAt(0).toUpperCase();
+
+      if (faviconExists) {
+        const trimmed = item.favicon_link.trim();
+
+        if (trimmed === "") {
+          iconDiv.textContent = fallbackText;
+        }
+        else if (trimmed === "...") {
+          let domain;
+          try {
+            domain = new URL(item.link).hostname.replace(/^www\./, '');
+          } catch {
+            domain = '';
+          }
+          if (domain) {
+            const googleFavicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+            const img = document.createElement('img');
+            img.src = googleFavicon;
+            img.alt = item.label || 'Icon';
+            img.onload = function() {
+              if (/chrome.*\.png$/.test(this.src) || /icons\/product\/chrome/.test(this.src)) {
+                iconDiv.innerHTML = fallbackText;
+              } else {
+                iconDiv.classList.add('has-favicon');
+                iconDiv.appendChild(this);
+              }
+            };
+            img.onerror = () => {
+              iconDiv.innerHTML = fallbackText;
+            };
+            iconDiv.textContent = fallbackText;
+          } else {
+            iconDiv.textContent = fallbackText;
+          }
+        }
+        else {
+          const img = document.createElement('img');
+          img.src = trimmed;
+          img.alt = item.label || 'Icon';
+          img.onerror = () => {
+            let domain;
+            try {
+              domain = new URL(item.link).hostname.replace(/^www\./, '');
+            } catch {
+              domain = '';
+            }
+            if (domain) {
+              const googleFavicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+              const fallbackImg = document.createElement('img');
+              fallbackImg.src = googleFavicon;
+              fallbackImg.alt = item.label || 'Icon';
+              fallbackImg.onload = function() {
+                if (/chrome.*\.png$/.test(this.src) || /icons\/product\/chrome/.test(this.src)) {
+                  iconDiv.innerHTML = fallbackText;
+                } else {
+                  iconDiv.classList.add('has-favicon');
+                  iconDiv.innerHTML = '';
+                  iconDiv.appendChild(this);
+                }
+              };
+              fallbackImg.onerror = () => {
+                iconDiv.innerHTML = fallbackText;
+              };
+              iconDiv.innerHTML = '';
+              iconDiv.appendChild(fallbackImg);
+            } else {
+              iconDiv.innerHTML = fallbackText;
+            }
+          };
+          iconDiv.classList.add('has-favicon');
+          iconDiv.appendChild(img);
+        }
+      } else {
+        iconDiv.textContent = fallbackText;
+      }
+
+      // Color application logic (Kept UNCHANGED)
+      if(item.color){
+        iconDiv.style.backgroundColor=item.color;
+        const hex = item.color.substring(1);
+        const r = parseInt(hex.substring(0,2),16);
+        const g = parseInt(hex.substring(2,4),16);
+        const b = parseInt(hex.substring(4,6),16);
+        const isDark = (r*0.299 + g*0.587 + b*0.114)/255 < 0.5;
+        iconDiv.style.color = isDark ? '#fff' : '#111';
+      }
+
+      const linkTextDiv = document.createElement('div');
+      linkTextDiv.className = 'link-text';
+      
+      const title=document.createElement('div');
+      title.className='title';
+      title.textContent=item.label||item.link;
+
+      const urlDiv=document.createElement('div');
+      urlDiv.className='url';
+      urlDiv.textContent=item.link;
+
+      // Event Listeners (Kept UNCHANGED logic, moved to new elements)
+      menuBtn.addEventListener('click', ev => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        closeAllMenus();
+        menu.classList.toggle('visible');
+      });
+
+      menu.addEventListener('click', ev => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        const action = ev.target.getAttribute('data-action');
+        if (action === 'edit') openModalForEdit(item.id);
+        else if (action === 'delete') if (confirm('Delete this shortcut?')) removeItem(item.id);
+        menu.classList.remove('visible');
+      });
+
+      document.addEventListener('click', ev => {
+        if (!menu.contains(ev.target) && ev.target !== menuBtn) {
+          menu.classList.remove('visible');
+        }
+      });
+      
+      // Assemble the parts
+      linkTextDiv.appendChild(title);
+      linkTextDiv.appendChild(urlDiv);
+
+      inner.appendChild(iconDiv);
+      inner.appendChild(linkTextDiv);
+
+      // The menu button is a direct child of the link, but positioned absolutely relative to it
+      a.appendChild(inner);
+      a.appendChild(menuBtn);
+      a.appendChild(menu);
+
+      li.appendChild(a);
+      menuDiv.appendChild(li);
+    });
+    
+    // Assemble the final category structure
+    dropdownDiv.appendChild(toggleButton);
+    dropdownDiv.appendChild(menuDiv);
+    linksContainer.appendChild(dropdownDiv);
+  }
+  
+  if(!sortedItems.length){
+    const empty=document.createElement('div');
+    empty.className='empty';
+    empty.textContent='No shortcuts yet. Use + Quick Links to add one.';
+    linksContainer.appendChild(empty);
+  }
+  
+  // Reinitialize tooltips for new elements
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  tooltipInstances = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+}
+
+
+// ======================
+// MODAL & CRUD (Immediate Save) (UNCHANGED)
+// ======================
+function closeAllMenus(){
+  document.querySelectorAll('.menu.visible').forEach(m=>m.classList.remove('visible'));
+}
+
+function openModalForAdd(){
+  editingId=null;
+  modalTitle.textContent='Add Link';
+  inputLabel.value=''; 
+  inputUrl.value='';
+  inputCategory.value='';
+  inputFavicon.value='';
+  inputColor.value=lastSelectedColor;
+  updateCategoryDatalist();
+  modalInstance.show();
+  setTimeout(() => inputLabel.focus(), 300); 
+}
+
+async function openModalForEdit(id){
+  await loadAllLinks();
+  let item = allLinks.find(x=>x.id==id);
+  if(!item){ alert('Item not found'); return; }
+  editingId=item.id;
+  modalTitle.textContent='Edit Link';
+  inputLabel.value=item.label||''; 
+  inputUrl.value=item.link||'';
+  inputCategory.value=item.category||'';
+  inputFavicon.value=item.favicon_link||'';
+  inputColor.value=item.color||'#e9e9e9';
+  updateCategoryDatalist();
+  modalInstance.show();
+  setTimeout(() => inputLabel.focus(), 300); 
+}
+
+saveBtn.onclick = async () => {
+  const label = inputLabel.value.trim(); 
+  const link = inputUrl.value.trim();
+  const category = inputCategory.value.trim() || 'Uncategorized';
+  const color = inputColor.value.trim();
+  const favicon_link = inputFavicon.value.trim();
+
+  if(!label || !link){ 
+    alert('Please provide both label (name) and URL/Path.');
+    return;
+  }
+
+  localStorage.setItem('QLinkLastColor', color);
+  lastSelectedColor = color;
+
+  const newItem = {label, link, category, color, favicon_link}; 
+  
+  await loadAllLinks(); 
+  
+  if(editingId){
+    let existingItem = allLinks.find(x => x.id == editingId);
+    if (existingItem) {
+        Object.assign(existingItem, newItem);
+    }
+  } else {
+    let lastId = allLinks.length ? Math.max(...allLinks.map(x=>x.id||0)) : 0;
+    newItem.id = lastId + 1;
+    newItem.sortOrder = allLinks.filter(x => x.category === category).length; 
+    allLinks.push(newItem);
+  }
+  
+  await saveCRUDImmediate();
+  
+  modalInstance.hide();
+  await renderAll();
+  await updateCategoryDatalist();
+};
+
+async function removeItem(id){
+  allLinks = allLinks.filter(x => x.id !== id);
+  
+  await saveCRUDImmediate();
+  await renderAll();
+  await updateCategoryDatalist();
+}
+
+// ======================
+// EXPORT / IMPORT (UNCHANGED)
+// ======================
+document.getElementById('exportBtn').onclick = async () => {
+  try{
+    await loadAllLinks();
+    const itemsToExport = allLinks.map(item => ({
+        id: item.id,
+        label: item.label,
+        link: item.link,
+        category: item.category,
+        color: item.color,
+        favicon_link: item.favicon_link,
+        sortOrder: item.sortOrder, 
+    }));
+    
+    if(!itemsToExport.length){ alert('No links to export.'); return; }
+    const json = JSON.stringify(itemsToExport, null, 2);
+    const blob = new Blob([json], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `quicklinks-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }catch(err){
+    console.error(err);
+    alert('Export failed.');
+  }
+};
+
+const importFileInput = document.getElementById('importFileInput');
+document.getElementById('importBtn').onclick = () => importFileInput.click();
+importFileInput.onchange = async ev => {
+  const file = ev.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    let imported = JSON.parse(text);
+    if(!Array.isArray(imported)){ alert('Invalid format.'); return; }
+    if(!confirm(`Import ${imported.length} link(s)?\nNote: This will replace current links.`)) return;
+    
+    let lastId = 0;
+    allLinks = imported.map((item, idx) => {
+      const newId = item.id || (1000 + idx);
+      lastId = Math.max(lastId, newId);
+      return {
+        id: newId,
+        label: item.label || '',
+        link: item.link || '',
+        category: item.category || 'Uncategorized',
+        color: item.color || '#e9e9e9',
+        favicon_link: item.favicon_link || '',
+        sortOrder: item.sortOrder ?? 0
+      };
+    }).filter(x => x.label && x.link);
+    
+    await saveCRUDImmediate(); 
+    
+    await renderAll();
+    await updateCategoryDatalist();
+    alert(`Imported ${allLinks.length} link(s)!`);
+  }catch(err){
+    console.error(err);
+    alert('Import failed. Check file format.');
+  } finally {
+    importFileInput.value = '';
+  }
+};
+
+// ======================
+// INIT (MODIFIED: Removed D&D save button handler)
+// ======================
+document.addEventListener('DOMContentLoaded', async () => {
+  modalInstance = new bootstrap.Modal(document.getElementById('linkModal'));
+  await loadAllLinks();
+  await renderAll();
+  await updateCategoryDatalist();
+
+  document.getElementById('addHeaderBtn').onclick = e => {
+    e.preventDefault();
+    openModalForAdd();
+  };
+  
+  // REMOVED: D&D MANUAL SAVE TRIGGER (saveSortBtn.onclick)
+
+  document.addEventListener('keydown', ev=>{
+    if(ev.key==='Escape' && modalInstance._isShown) modalInstance.hide();
+    if((ev.ctrlKey||ev.metaKey) && ev.key.toLowerCase()==='k'){
+      ev.preventDefault();
+      openModalForAdd();
+    }
+  });
+});
+
+async function updateCategoryDatalist() {
+  const categories = [...new Set(allLinks.map(x => x.category))].sort((a, b) => a.localeCompare(b));
+  const datalist = document.getElementById('categoryList');
+  datalist.innerHTML = '';
+  categories.forEach(cat => {
+    const option = document.createElement('option');
+    option.value = cat;
+    datalist.appendChild(option);
+  });
+}
+</script>
+
+</body>
+</html>
